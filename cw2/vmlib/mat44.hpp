@@ -116,7 +116,6 @@ Mat44f make_rotation_y( float aAngle ) noexcept
 		0.f, 0.f, 0.f, 1.f
 	};
 }
-}
 
 inline
 Mat44f make_rotation_z( float aAngle ) noexcept

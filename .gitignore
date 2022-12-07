@@ -7,3 +7,12 @@
 *.sln
 *.vcxproj
 *.user
+*.idb
+*.lib
+*.pdb
+*.exe
+*.tlog
+*.recipe
+*.ilk
+*.log
+*.obj
