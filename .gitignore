@@ -1,0 +1,9 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/cw2/.vs/COMP3811-cw2
+/.vs
+*.sln
+*.vcxproj
+*.user
