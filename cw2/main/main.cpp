@@ -21,9 +21,34 @@ namespace
 {
 	constexpr char const* kWindowTitle = "COMP3811 - Coursework 2";
 	
+	constexpr float kPi_ = 3.1415926f;
+
+	//Camera state and constant values.
+	constexpr float kMovementPerSecond_ = 5.f; // units per second
+	constexpr float kMovementModNeg_ = 2.5f;
+	constexpr float kMovementModPos_ = 5.f;
+	constexpr float kMouseSensitivity_ = 0.01f; // radians per pixel
+	struct State_
+	{
+		ShaderProgram* prog;
+
+		struct CamCtrl_
+		{
+			bool cameraActive;
+			bool forward, backward, left, right, up, down;
+			bool actionSpeedUp, actionSlowDown;
+
+			float phi, theta;
+			float radius;
+
+			float lastX, lastY;
+		} camControl;
+	};
+
 	void glfw_callback_error_( int, char const* );
 
 	void glfw_callback_key_( GLFWwindow*, int, int, int, int );
+	void glfw_callback_motion_(GLFWwindow*, double, double);
 
 	struct GLFWCleanupHelper
 	{
@@ -87,8 +112,15 @@ int main() try
 
 	GLFWWindowDeleter windowDeleter{ window };
 
+
+	// Set up event handling
+	State_ state{};
+
+	glfwSetWindowUserPointer(window, &state);
+
 	// Set up event handling
 	glfwSetKeyCallback( window, &glfw_callback_key_ );
+	glfwSetCursorPosCallback(window, &glfw_callback_motion_);
 
 	// Set up drawing stuff
 	glfwMakeContextCurrent( window );
@@ -112,7 +144,11 @@ int main() try
 	// Global GL state
 	OGL_CHECKPOINT_ALWAYS();
 
-	// TODO: global GL setup goes here
+	// Global GL setup goes here
+	glEnable(GL_FRAMEBUFFER_SRGB);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
+	glClearColor(0.2f, 0.2f, 0.2f, 0.0f);
 
 	OGL_CHECKPOINT_ALWAYS();
 
@@ -124,6 +160,18 @@ int main() try
 	glfwGetFramebufferSize( window, &iwidth, &iheight );
 
 	glViewport( 0, 0, iwidth, iheight );
+
+	// Load shader program
+	ShaderProgram prog({
+		{ GL_VERTEX_SHADER, "assets/default.vert" },
+		{ GL_FRAGMENT_SHADER, "assets/default.frag" }
+		});
+	state.prog = &prog;
+	state.camControl.radius = 10.f;
+
+	// Animation state
+	auto last = Clock::now();
+	float angle = 0.f;
 
 	// Other initialization & loading
 	OGL_CHECKPOINT_ALWAYS();
@@ -158,12 +206,46 @@ int main() try
 				} while( 0 == nwidth || 0 == nheight );
 			}
 
-			glViewport( 0, 0, iwidth, iheight );
+			glViewport( 0, 0, nwidth, nheight );
 		}
 
-		// Update state
+		// Update state of camera
+		// TODO: Make movement based on current camera orientation.
+		auto const now = Clock::now();
+		float dt = std::chrono::duration_cast<Secondsf>(now - last).count();
+		last = now;
+		angle += dt * kPi_ * 0.3f;
+		if (angle >= 2.f * kPi_)
+			angle -= 2.f * kPi_;
 
-		//TODO: update state
+		float speedChange = 0;
+		if (state.camControl.actionSpeedUp)
+			speedChange = kMovementModPos_;
+		else if (state.camControl.actionSlowDown)
+			speedChange = -kMovementModNeg_;
+		else
+			speedChange = 0;
+		// Update camera state based on keyboard input.
+		if (state.camControl.forward)
+			state.camControl.radius -= (kMovementPerSecond_ + speedChange) * dt;
+		else if (state.camControl.backward)
+			state.camControl.radius += (kMovementPerSecond_ + speedChange) * dt;
+
+		//Left right
+		if (state.camControl.left)
+			state.camControl.radius -= (kMovementPerSecond_ + speedChange) * dt;
+		else if (state.camControl.right)
+			state.camControl.radius += (kMovementPerSecond_ + speedChange) * dt;
+
+		//Up down
+		if (state.camControl.up)
+			state.camControl.radius -= (kMovementPerSecond_ + speedChange) * dt;
+		else if (state.camControl.down)
+			state.camControl.radius += (kMovementPerSecond_ + speedChange) * dt;
+
+		if (state.camControl.radius <= 0.1f)
+			state.camControl.radius = 0.1f;
+
 	
 		// Draw scene
 		OGL_CHECKPOINT_DEBUG();
@@ -177,6 +259,7 @@ int main() try
 	}
 
 	// Cleanup.
+	state.prog = nullptr;
 	//TODO: additional cleanup
 	
 	return 0;
@@ -190,6 +273,7 @@ catch( std::exception const& eErr )
 }
 
 
+//GLFW key inputs for movement and camera rotation.
 namespace
 {
 	void glfw_callback_error_( int aErrNum, char const* aErrDesc )
@@ -203,6 +287,139 @@ namespace
 		{
 			glfwSetWindowShouldClose( aWindow, GLFW_TRUE );
 			return;
+		}
+		if( auto* state = static_cast<State_*>(glfwGetWindowUserPointer( aWindow )) )
+		{
+			// R-key reloads shaders.
+			if( GLFW_KEY_R == aKey && GLFW_PRESS == aAction )
+			{
+				if( state->prog )
+				{
+					try
+					{
+						state->prog->reload();
+						std::fprintf( stderr, "Shaders reloaded and recompiled.\n" );
+					}
+					catch( std::exception const& eErr )
+					{
+						std::fprintf( stderr, "Error when reloading shader:\n" );
+						std::fprintf( stderr, "%s\n", eErr.what() );
+						std::fprintf( stderr, "Keeping old shader.\n" );
+					}
+				}
+			}
+
+			// Space toggles camera
+			if( GLFW_KEY_SPACE == aKey && GLFW_PRESS == aAction )
+			{
+				state->camControl.cameraActive = !state->camControl.cameraActive;
+
+				if( state->camControl.cameraActive )
+					glfwSetInputMode( aWindow, GLFW_CURSOR, GLFW_CURSOR_HIDDEN );
+				else
+					glfwSetInputMode( aWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL );
+			}
+
+			// Camera controls if camera is active
+			if (state->camControl.cameraActive)
+			{
+				//Forward back left and right
+				if (GLFW_KEY_W == aKey)
+				{
+					if (GLFW_PRESS == aAction)
+						state->camControl.forward = true;
+					else if (GLFW_RELEASE == aAction)
+						state->camControl.forward = false;
+				}
+				else if (GLFW_KEY_S == aKey)
+				{
+					if (GLFW_PRESS == aAction)
+						state->camControl.backward = true;
+					else if (GLFW_RELEASE == aAction)
+						state->camControl.backward = false;
+				}
+				if (GLFW_KEY_A == aKey)
+				{
+					if (GLFW_PRESS == aAction)
+						state->camControl.left = true;
+					else if (GLFW_RELEASE == aAction)
+						state->camControl.left = false;
+				}
+				else if (GLFW_KEY_D == aKey)
+				{
+					if (GLFW_PRESS == aAction)
+						state->camControl.right = true;
+					else if (GLFW_RELEASE == aAction)
+						state->camControl.right = false;
+				}
+
+				//Up and down (EQ)
+				if (GLFW_KEY_E == aKey)
+				{
+					if (GLFW_PRESS == aAction)
+						state->camControl.up = true;
+					else if (GLFW_RELEASE == aAction)
+						state->camControl.up = false;
+				}
+				else if (GLFW_KEY_Q == aKey)
+				{
+					if (GLFW_PRESS == aAction)
+						state->camControl.down = true;
+					else if (GLFW_RELEASE == aAction)
+						state->camControl.down = false;
+				}
+				
+				//Speed modifiers
+				if (GLFW_KEY_LEFT_SHIFT == aKey)
+				{
+					if (GLFW_PRESS == aAction)
+						state->camControl.actionSpeedUp= true;
+					else if (GLFW_RELEASE == aAction)
+						state->camControl.actionSpeedUp = false;
+				}
+				else if (GLFW_KEY_LEFT_CONTROL == aKey)
+				{
+					if (GLFW_PRESS == aAction)
+						state->camControl.actionSlowDown = true;
+					else if (GLFW_RELEASE == aAction)
+						state->camControl.actionSlowDown = false;
+				}
+			}
+
+			// If camera is not active then stop movement
+			else
+			{
+				state->camControl.forward = false;
+				state->camControl.backward = false;
+				state->camControl.left = false;
+				state->camControl.right = false;
+				state->camControl.actionSpeedUp = false;
+				state->camControl.actionSlowDown = false;
+			}
+		}
+	}
+
+	//Camera rotation function.
+	void glfw_callback_motion_(GLFWwindow* aWindow, double aX, double aY)
+	{
+		if (auto* state = static_cast<State_*>(glfwGetWindowUserPointer(aWindow)))
+		{
+			if (state->camControl.cameraActive)
+			{
+				auto const dx = float(aX - state->camControl.lastX);
+				auto const dy = float(aY - state->camControl.lastY);
+
+				state->camControl.phi += dx * kMouseSensitivity_;
+
+				state->camControl.theta += dy * kMouseSensitivity_;
+				if (state->camControl.theta > kPi_ / 2.f)
+					state->camControl.theta = kPi_ / 2.f;
+				else if (state->camControl.theta < -kPi_ / 2.f)
+					state->camControl.theta = -kPi_ / 2.f;
+			}
+
+			state->camControl.lastX = float(aX);
+			state->camControl.lastY = float(aY);
 		}
 	}
 }
