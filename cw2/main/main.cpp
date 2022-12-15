@@ -19,6 +19,7 @@
 #include "defaults.hpp"
 #include "cylinder.hpp"
 #include "loadcustom.hpp"
+#include <string>
 
 namespace
 {
@@ -183,9 +184,8 @@ int main() try
 	
 	// TODO: 
 
+/*
 	std::vector<SimpleMeshData> besties;
-
-
 	auto bestie = load_simple_binary_mesh( "assets/Armadillo.comp3811bin" );
 	auto bestieIndex = load_simple_binary_mesh_index( "assets/Armadillo.comp3811bin" );
 	int friends = 2;
@@ -222,10 +222,60 @@ int main() try
 	GLuint vao = create_vaoM(&besties[0],11);
 	printf("floor =(%ld)", floor.positions.size());
 	printf("pillar =(%ld)", pillar.positions.size());
+	int vertexCount = bestie.positions.size() *friends * friends + floor.positions.size() +pillar.positions.size() * rows*2;*/
+
+	std::vector<SimpleMeshData> chapel;
+
+	auto floor = make_cube( Vec3f{1, 1, 1}, make_scaling( 200.f, 2.f, 200.f ) * make_translation( { 0.f, -1.f, 0.f }));
+	chapel.emplace_back(floor);
+
+	//auto frontWall = make_cube( Vec3f{1, 1, 1}, make_scaling( 5.f, 10.f, 0.5f ) * make_translation( { 3.5f, 5.f, 2.25f }));
+	auto frontWall = make_cube( Vec3f{1, 1, 1}, make_scaling( 10.f, 15.f, 0.5f )); //so 10 meter
+	int wallBits = 2;
+	for (float i = 0; i < wallBits; i++)
+		//chapel.emplace_back(make_cube( Vec3f{0, 1, 1}, make_translation( { 3.5f - 7.f*i, 0.f, 5.f }) * make_scaling( 5.f, 10.f, 0.5f )));
+		chapel.emplace_back(make_change(frontWall, make_translation( { 14.f - 28.f*i, 0.f, 5.f }) ));
 
 
-	int vertexCount = bestie.positions.size() *friends * friends + floor.positions.size() +pillar.positions.size() * rows*2;
+	auto sideWall = make_cube( Vec3f{1, 1, 1}, make_scaling( .5f, 15.f, 24.f ));//so 48 meter
+	int sideWallBits = 2;
+	for (float i = 0; i < sideWallBits; i++)
+		//chapel.emplace_back(make_cube( Vec3f{0, 1, 1}, make_translation( { 3.5f - 7.f*i, 0.f, 5.f }) * make_scaling( 5.f, 10.f, 0.5f )));
+		chapel.emplace_back(make_change(sideWall, make_translation( { 22.f - 44.f*i, 0.f, 29.f }) ));
+
+
+	auto pillar = make_cylinder( true, 18, {1, 0, 1}, make_scaling( .5f, 10.f, .5f ) * make_rotation_z( 3.141592f / 2.f ));
+	struct PointLight {
+			Vec3f position;
+			float constant;
+			float linear;
+			float quadratic;
+			Vec3f ambient;
+			Vec3f diffuse;
+			Vec3f specular;
+	};
+	std::vector<PointLight> PointLightData;
+	int rows = 3;
+	for (float i = 0; i < rows; i++)
+		for (float l = 0; l < 2; l++) {
+			chapel.emplace_back(make_change(pillar, make_translation( { 5.f - 10.f*l, 0.f, 15.f + 10.f * i }) ));
+			//chapel.emplace_back(make_cylinder( true, 18, Vec3f{1, 0, 1}, make_translation( { 22.f - 44.f*i, 0.f, 29.f })));
+		
+			PointLight p1;
+			p1.position = Vec3f{ 4.f - 8.f*l, 4.f, 15.f + 10.f * i };
+			p1.constant = 1.f;
+			p1.linear = 0.3f;
+			p1.quadratic = 0.32f;
+			p1.ambient = Vec3f{ 0.f, 1.f, 0.f };
+			p1.diffuse = Vec3f{ 0.f, 1.f, 0.f };
+			p1.specular = Vec3f{ 0.f, 1.f, 0.f };
+			PointLightData.emplace_back(p1);
+		}
+
+
+	int vertexCount = floor.positions.size() + frontWall.positions.size() * wallBits + sideWall.positions.size() * sideWallBits + pillar.positions.size() * rows*2;
 	float sunXloc = -1.f;
+	GLuint vao = create_vaoM(&chapel[0], 1 + wallBits + sideWallBits + rows*2);
 
 	OGL_CHECKPOINT_ALWAYS();
 
@@ -267,46 +317,8 @@ int main() try
 		if (angle >= 2.f * kPi_)
 			angle -= 2.f * kPi_;
 
-		float speedChange = 0;
-		if (state.camControl.actionSpeedUp)
-			speedChange = kMovementModPos_;
-		else if (state.camControl.actionSlowDown)
-			speedChange = -kMovementModNeg_;
-		else
-			speedChange = 0;
-		// Update camera state based on keyboard input.
-		if (state.camControl.forward) {
-			state.camControl.radius -= (kMovementPerSecond_ + speedChange) * dt;
-			state.camControl.Z += (kMovementPerSecond_ + speedChange) * dt;
-		} else if (state.camControl.backward) {
-			state.camControl.radius += (kMovementPerSecond_ + speedChange) * dt;
-			state.camControl.Z -= (kMovementPerSecond_ + speedChange) * dt;
-		}
-
-		//Left right
-		if (state.camControl.left) {
-			state.camControl.radius -= (kMovementPerSecond_ + speedChange) * dt;
-			state.camControl.X += (kMovementPerSecond_ + speedChange) * dt;
-		} else if (state.camControl.right) {
-			state.camControl.radius += (kMovementPerSecond_ + speedChange) * dt;
-			state.camControl.X -= (kMovementPerSecond_ + speedChange) * dt;
-		}
-
-		//Up down
-		if (state.camControl.up) {
-			state.camControl.radius -= (kMovementPerSecond_ + speedChange) * dt;
-			state.camControl.Y += (kMovementPerSecond_ + speedChange) * dt;
-		}else if (state.camControl.down) {
-			state.camControl.radius += (kMovementPerSecond_ + speedChange) * dt;
-			state.camControl.Y -= (kMovementPerSecond_ + speedChange) * dt;
-		}
-
-		if (state.camControl.radius <= 0.1f)
-			state.camControl.radius = 0.1f;
-
 		//TODO: define and compute projCameraWorld matrix
 		Mat44f model2world = make_rotation_y(0);
-
 		Mat44f Rx = make_rotation_x( state.camControl.theta );
 		Mat44f Ry = make_rotation_y( state.camControl.phi );
 		Mat44f T = make_translation( { 0.f, 0.f, -state.camControl.radius } );
@@ -322,8 +334,57 @@ int main() try
 		);
 		projection = projection*Rx*Ry;
 
+		for (int i = 0; i< 4; i++)
+			printf("projection: (%f, %f, %f, %f)\n", projection.v[i*4],projection.v[i*4+1],projection.v[i*4+2],projection.v[i*4+3]);
+		printf("\n");
 		Mat44f projCameraWorld = projection * world2camera * model2world;
 		Mat33f normalMatrix = mat44_to_mat33( transpose(invert(model2world)) );
+		for (int i = 0; i< 4; i++)
+			printf("projCameraWorld: (%f, %f, %f, %f)\n", projCameraWorld.v[i*4],projCameraWorld.v[i*4+1],projCameraWorld.v[i*4+2],projCameraWorld.v[i*4+3]);
+
+		for (int i = 0; i< 3; i++)
+			printf("normalMatrix: (%f, %f, %f)\n", projCameraWorld.v[i*3],projCameraWorld.v[i*3+1],projCameraWorld.v[i*3+2]);
+
+
+		float speedChange = 0;
+		if (state.camControl.actionSpeedUp)
+			speedChange = kMovementModPos_;
+		else if (state.camControl.actionSlowDown)
+			speedChange = -kMovementModNeg_;
+		else
+			speedChange = 0;
+		// Update camera state based on keyboard input.
+		if (state.camControl.forward) {
+			state.camControl.radius -= (kMovementPerSecond_ + speedChange) * dt;
+			//state.camControl.Z += (kMovementPerSecond_ + speedChange) * dt * projection(0,0) ;
+			//state.camControl.X += (kMovementPerSecond_ + speedChange) * dt * projection(2,2) ;
+			state.camControl.Z += (kMovementPerSecond_ + speedChange) * dt;// * std::sin(state.camControl.phi) ;
+		} else if (state.camControl.backward) {
+			state.camControl.radius += (kMovementPerSecond_ + speedChange) * dt;
+			state.camControl.Z -= (kMovementPerSecond_ + speedChange) * dt;
+		}
+
+		//Left right
+		if (state.camControl.left) {
+			state.camControl.radius -= (kMovementPerSecond_ + speedChange) * dt;
+			state.camControl.X += (kMovementPerSecond_ + speedChange) * dt;// * std::sin(projection(2,2));
+		} else if (state.camControl.right) {
+			state.camControl.radius += (kMovementPerSecond_ + speedChange) * dt;
+			state.camControl.X -= (kMovementPerSecond_ + speedChange) * dt;// * projection(1,1);;
+		}
+
+		//Up down
+		if (state.camControl.up) {
+			state.camControl.radius -= (kMovementPerSecond_ + speedChange) * dt;
+			state.camControl.Y += (kMovementPerSecond_ + speedChange) * dt;
+		}else if (state.camControl.down) {
+			state.camControl.radius += (kMovementPerSecond_ + speedChange) * dt;
+			state.camControl.Y -= (kMovementPerSecond_ + speedChange) * dt;
+		}
+
+		if (state.camControl.radius <= 0.1f)
+			state.camControl.radius = 0.1f;
+
 
 		sunXloc += .01f;
 		if (sunXloc > .99f)
@@ -332,25 +393,6 @@ int main() try
 
 		Vec3f lightPos = Vec3f{ 0.f, 1.f, 0.f };
 
-		struct PointLight {
-			Vec3f position;
-			float constant;
-			float linear;
-			float quadratic;
-			Vec3f ambient;
-			Vec3f diffuse;
-		};
-
-		std::vector<PointLight> PointLightData;
-		
-		PointLight p1;
-		p1.position = Vec3f{ 0, 1.f, 0.f };
-		p1.constant = 5.f;
-		p1.linear = 0.3f;
-		p1.quadratic = 0.32f;
-		p1.ambient = Vec3f{ 0.f, 1.f, 0.f };
-		p1.diffuse = Vec3f{ 0.f, 1.f, 0.f };
-		PointLightData.emplace_back(p1);
 
 	
 		// Draw scene
@@ -367,16 +409,27 @@ int main() try
 		glUniform3f( glGetUniformLocation(prog.programId(), "uLightDiffuse"), .1f, 0.3f, .1f ); //lightDiffuse
 		//glUniform3f( 4, 0.05f, 0.05f, 0.05f ); //uSceneAmbient
 		glUniform3f( glGetUniformLocation(prog.programId(), "uSceneAmbient"), 0.05f, 0.05f, 0.05f ); //uSceneAmbient
+		glUniform3f( glGetUniformLocation(prog.programId(), "viewPos"), state.camControl.X, state.camControl.Y, state.camControl.Z ); //uSceneAmbient
 
 		//glUniform3fv( 10, &pl.position.x ); //uSceneAmbient
 		// point light 1
         //lightingShader.setVec3("pointLights[0].position", pointLightPositions[0]);
-		glUniform3fv(glGetUniformLocation(prog.programId(), "pointLights[0].position"), 1, &PointLightData[0].position.x ); //lightDir uLightDir
-		glUniform1f(glGetUniformLocation(prog.programId(), "pointLights[0].constant"), PointLightData[0].constant ); //lightDir uLightDir
-		glUniform1f(glGetUniformLocation(prog.programId(), "pointLights[0].linear"), PointLightData[0].linear ); //lightDir uLightDir
-		glUniform1f(glGetUniformLocation(prog.programId(), "pointLights[0].quadratic"), PointLightData[0].quadratic ); //lightDir uLightDir
-		glUniform3fv(glGetUniformLocation(prog.programId(), "pointLights[0].ambient"), 1, &PointLightData[0].ambient.x ); //lightDir uLightDir
-		glUniform3fv(glGetUniformLocation(prog.programId(), "pointLights[0].diffuse"), 1, &PointLightData[0].diffuse.x ); //lightDir uLightDir
+		#include <string>
+
+		for (int i = 0; i < 6; i++) {
+			//std::array<char, 10> str;
+			//std::to_chars(str.data(), str.data() + str.size(), 42);
+			//char* s = "pointLights["+std::to_string(i)+"].position";
+			const char number[] = "pointLights["+std::to_string(i)[0]+"].position";
+			const char * end = "].position";
+			glUniform3fv(glGetUniformLocation(prog.programId(), "pointLights["+number), 1, &PointLightData[0].position.x ); //lightDir uLightDir
+			glUniform1f(glGetUniformLocation(prog.programId(), "pointLights[0].constant"), PointLightData[0].constant ); //lightDir uLightDir
+			glUniform1f(glGetUniformLocation(prog.programId(), "pointLights[0].linear"), PointLightData[0].linear ); //lightDir uLightDir
+			glUniform1f(glGetUniformLocation(prog.programId(), "pointLights[0].quadratic"), PointLightData[0].quadratic ); //lightDir uLightDir
+			glUniform3fv(glGetUniformLocation(prog.programId(), "pointLights[0].ambient"), 1, &PointLightData[0].ambient.x ); //lightDir uLightDir
+			glUniform3fv(glGetUniformLocation(prog.programId(), "pointLights[0].diffuse"), 1, &PointLightData[0].diffuse.x ); //lightDir uLightDir
+			glUniform3fv(glGetUniformLocation(prog.programId(), "pointLights[0].specular"), 1, &PointLightData[0].specular.x ); //lightDir uLightDir
+		}
 
 
 		//glUniform3f(5, 0.f, 6.f, 0.f  ); //uSceneAmbient
@@ -418,6 +471,16 @@ catch( std::exception const& eErr )
 	std::fprintf( stderr, "%s\n", eErr.what() );
 	std::fprintf( stderr, "Bye.\n" );
 	return 1;
+}
+
+
+char * converter(std::string str) {
+	char arr[str.length() + 1]; 
+	for (int x = 0; x < sizeof(arr); x++) { 
+		arr[x] = str[x]; 
+		cout << arr[x]; 
+	} 
+	return arr;
 }
 
 
