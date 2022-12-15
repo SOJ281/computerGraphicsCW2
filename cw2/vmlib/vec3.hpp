@@ -136,4 +136,11 @@ float length( Vec3f aVec ) noexcept
 	return std::sqrt( dot( aVec, aVec ) );
 }
 
+inline
+Vec3f normalize( Vec3f aVec ) noexcept
+{
+	auto const l = length( aVec );
+	return aVec / l;
+}
+
 #endif // VEC3_HPP_5710DADF_17EF_453C_A9C8_4A73DC66B1CD

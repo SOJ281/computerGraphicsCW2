@@ -14,8 +14,11 @@
 
 #include "../vmlib/vec4.hpp"
 #include "../vmlib/mat44.hpp"
+#include "../vmlib/mat33.hpp"
 
 #include "defaults.hpp"
+#include "cylinder.hpp"
+#include "loadcustom.hpp"
 
 namespace
 {
@@ -42,6 +45,7 @@ namespace
 			float radius;
 
 			float lastX, lastY;
+			float X, Y, Z;
 		} camControl;
 	};
 
@@ -146,7 +150,7 @@ int main() try
 
 	// Global GL setup goes here
 	glEnable(GL_FRAMEBUFFER_SRGB);
-	glEnable(GL_CULL_FACE);
+	//glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 	glClearColor(0.2f, 0.2f, 0.2f, 0.0f);
 
@@ -168,6 +172,7 @@ int main() try
 		});
 	state.prog = &prog;
 	state.camControl.radius = 10.f;
+	state.camControl.Y = -3.f;
 
 	// Animation state
 	auto last = Clock::now();
@@ -177,6 +182,50 @@ int main() try
 	OGL_CHECKPOINT_ALWAYS();
 	
 	// TODO: 
+
+	std::vector<SimpleMeshData> besties;
+
+
+	auto bestie = load_simple_binary_mesh( "assets/Armadillo.comp3811bin" );
+	auto bestieIndex = load_simple_binary_mesh_index( "assets/Armadillo.comp3811bin" );
+	int friends = 2;
+	for (float i = 0; i < friends; i++)
+		for (float l = 0; l < friends; l++)
+			besties.emplace_back(make_change(bestie, make_translation( { -5.f + 10*i, 0.f, -5.f + 10*l }) ));
+	for (int i = 0; i < bestie.positions.size(); i++) {
+		if (bestie.positions[i].x != bestieIndex.positions[bestieIndex.indices[i]].x || bestie.positions[i].y != bestieIndex.positions[bestieIndex.indices[i]].y 
+		 || bestie.positions[i].z != bestieIndex.positions[bestieIndex.indices[i]].z)
+			printf("value =(%f,%f,%f)\n", bestie.positions[i].x,bestie.positions[i].y,bestie.positions[i].z);
+	}
+
+	//auto floor = make_cube({1, 0, 1}, make_scaling( 200.f, 2.f, 200.f ) * make_translation( { -100.f, -2.f, -100.f }));
+	auto floor = make_cube( Vec3f{1, 1, 1}, make_scaling( 200.f, 2.f, 200.f ) * make_translation( { 0.f, -1.f, 0.f }));
+	besties.emplace_back(floor);
+
+	auto pillar = make_cylinder( true, 18, {1, 0, 1}, make_scaling( 5.f, 1.f, 1.f ));
+	int rows = 3;
+	for (float i = 0; i < rows; i++)
+		for (float l = 0; l < 2; l++)
+			besties.emplace_back(make_cylinder( 
+				true, 18, Vec3f{1, 0, 1}, make_scaling( .5f, 5.f, .5f ) * make_translation( { 4.f - l*8.f, 0.f, 9.f + i*5.f }) * make_rotation_z( 3.141592f / 2.f )));
+
+	//for (auto idx :bestie.positions )
+	//	printf("INDICES =(%f,%f,%f)", idx.x,idx.y,idx.z);
+			//besties.emplace_back(bestie);
+	//auto aMeshData = make_cylinder( true, 18, {1, 0, 1}, make_rotation_z( 3.141592f / 2.f )* make_scaling( 8.f, 2.f, 2.f ));
+	//besties.emplace_back(aMeshData);
+
+	//auto aMeshData = make_div_cylinder( true, 18, {1, 0, 1}, make_scaling( 5.f, 1.f, 1.f ), 16);
+	//besties.emplace_back(testCylinder);
+	//besties.emplace_back(aMeshData);
+	//GLuint vao = create_vao(aMeshData);
+	GLuint vao = create_vaoM(&besties[0],11);
+	printf("floor =(%ld)", floor.positions.size());
+	printf("pillar =(%ld)", pillar.positions.size());
+
+
+	int vertexCount = bestie.positions.size() *friends * friends + floor.positions.size() +pillar.positions.size() * rows*2;
+	float sunXloc = -1.f;
 
 	OGL_CHECKPOINT_ALWAYS();
 
@@ -226,31 +275,130 @@ int main() try
 		else
 			speedChange = 0;
 		// Update camera state based on keyboard input.
-		if (state.camControl.forward)
+		if (state.camControl.forward) {
 			state.camControl.radius -= (kMovementPerSecond_ + speedChange) * dt;
-		else if (state.camControl.backward)
+			state.camControl.Z += (kMovementPerSecond_ + speedChange) * dt;
+		} else if (state.camControl.backward) {
 			state.camControl.radius += (kMovementPerSecond_ + speedChange) * dt;
+			state.camControl.Z -= (kMovementPerSecond_ + speedChange) * dt;
+		}
 
 		//Left right
-		if (state.camControl.left)
+		if (state.camControl.left) {
 			state.camControl.radius -= (kMovementPerSecond_ + speedChange) * dt;
-		else if (state.camControl.right)
+			state.camControl.X += (kMovementPerSecond_ + speedChange) * dt;
+		} else if (state.camControl.right) {
 			state.camControl.radius += (kMovementPerSecond_ + speedChange) * dt;
+			state.camControl.X -= (kMovementPerSecond_ + speedChange) * dt;
+		}
 
 		//Up down
-		if (state.camControl.up)
+		if (state.camControl.up) {
 			state.camControl.radius -= (kMovementPerSecond_ + speedChange) * dt;
-		else if (state.camControl.down)
+			state.camControl.Y += (kMovementPerSecond_ + speedChange) * dt;
+		}else if (state.camControl.down) {
 			state.camControl.radius += (kMovementPerSecond_ + speedChange) * dt;
+			state.camControl.Y -= (kMovementPerSecond_ + speedChange) * dt;
+		}
 
 		if (state.camControl.radius <= 0.1f)
 			state.camControl.radius = 0.1f;
+
+		//TODO: define and compute projCameraWorld matrix
+		Mat44f model2world = make_rotation_y(0);
+
+		Mat44f Rx = make_rotation_x( state.camControl.theta );
+		Mat44f Ry = make_rotation_y( state.camControl.phi );
+		Mat44f T = make_translation( { 0.f, 0.f, -state.camControl.radius } );
+		Mat44f moving = make_translation( { state.camControl.X, state.camControl.Y, state.camControl.Z } );
+		Mat44f world2camera = moving;
+		//Mat44f world2camera = T*Rx*Ry;
+		//Mat44f world2camera = make_translation( { 0.f, 0.f, -10.f } );
+
+		Mat44f projection = make_perspective_projection(
+			60.f * 3.1415926f / 180.f,
+			fbwidth/float(fbheight),
+			0.1f, 100.0f
+		);
+		projection = projection*Rx*Ry;
+
+		Mat44f projCameraWorld = projection * world2camera * model2world;
+		Mat33f normalMatrix = mat44_to_mat33( transpose(invert(model2world)) );
+
+		sunXloc += .01f;
+		if (sunXloc > .99f)
+			sunXloc = -1.f;
+		Vec3f lightDir = normalize( Vec3f{ 1.f, 1.f, 0.5f } );
+
+		Vec3f lightPos = Vec3f{ 0.f, 1.f, 0.f };
+
+		struct PointLight {
+			Vec3f position;
+			float constant;
+			float linear;
+			float quadratic;
+			Vec3f ambient;
+			Vec3f diffuse;
+		};
+
+		std::vector<PointLight> PointLightData;
+		
+		PointLight p1;
+		p1.position = Vec3f{ 0, 1.f, 0.f };
+		p1.constant = 5.f;
+		p1.linear = 0.3f;
+		p1.quadratic = 0.32f;
+		p1.ambient = Vec3f{ 0.f, 1.f, 0.f };
+		p1.diffuse = Vec3f{ 0.f, 1.f, 0.f };
+		PointLightData.emplace_back(p1);
 
 	
 		// Draw scene
 		OGL_CHECKPOINT_DEBUG();
 
 		//TODO: draw frame
+		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+		glUseProgram( prog.programId() );
+
+
+		//glUniform3fv( 2, 1, &lightDir.x ); //lightDir uLightDir
+		glUniform3fv(glGetUniformLocation(prog.programId(), "uLightDir"), 1, &lightDir.x ); //lightDir uLightDir
+		//glUniform3f( 3, 0.f, 0.f, 0.f ); //lightDiffuse
+		glUniform3f( glGetUniformLocation(prog.programId(), "uLightDiffuse"), .1f, 0.3f, .1f ); //lightDiffuse
+		//glUniform3f( 4, 0.05f, 0.05f, 0.05f ); //uSceneAmbient
+		glUniform3f( glGetUniformLocation(prog.programId(), "uSceneAmbient"), 0.05f, 0.05f, 0.05f ); //uSceneAmbient
+
+		//glUniform3fv( 10, &pl.position.x ); //uSceneAmbient
+		// point light 1
+        //lightingShader.setVec3("pointLights[0].position", pointLightPositions[0]);
+		glUniform3fv(glGetUniformLocation(prog.programId(), "pointLights[0].position"), 1, &PointLightData[0].position.x ); //lightDir uLightDir
+		glUniform1f(glGetUniformLocation(prog.programId(), "pointLights[0].constant"), PointLightData[0].constant ); //lightDir uLightDir
+		glUniform1f(glGetUniformLocation(prog.programId(), "pointLights[0].linear"), PointLightData[0].linear ); //lightDir uLightDir
+		glUniform1f(glGetUniformLocation(prog.programId(), "pointLights[0].quadratic"), PointLightData[0].quadratic ); //lightDir uLightDir
+		glUniform3fv(glGetUniformLocation(prog.programId(), "pointLights[0].ambient"), 1, &PointLightData[0].ambient.x ); //lightDir uLightDir
+		glUniform3fv(glGetUniformLocation(prog.programId(), "pointLights[0].diffuse"), 1, &PointLightData[0].diffuse.x ); //lightDir uLightDir
+
+
+		//glUniform3f(5, 0.f, 6.f, 0.f  ); //uSceneAmbient
+
+		//glUniformMatrix4fv( 0, 1, GL_TRUE, projCameraWorld.v );
+		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "uProjCameraWorld"), 1, GL_TRUE, projCameraWorld.v );
+		//glUniformMatrix3fv(1,1, GL_TRUE, normalMatrix.v);
+		glUniformMatrix3fv(glGetUniformLocation(prog.programId(), "uNormalMatrix"),1, GL_TRUE, normalMatrix.v);
+
+		
+		//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+		glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+		
+		glBindVertexArray( vao );
+		glDrawArrays( GL_TRIANGLES, 0, vertexCount);
+		//glDrawElements( GL_TRIANGLES, vertexCount, GL_UNSIGNED_INT, NULL);
+		//glDrawElements( GL_TRIANGLES, vertexCount, GL_UNSIGNED_BYTE, NULL);
+		//glDrawElements( GL_TRIANGLES, vertexCount, GL_UNSIGNED_SHORT, NULL);
+
+
+		glBindVertexArray( 0 );
+		glUseProgram( 0 );
 
 		OGL_CHECKPOINT_DEBUG();
 

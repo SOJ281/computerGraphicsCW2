@@ -95,6 +95,20 @@ Vec4f operator*( Mat44f const& aLeft, Vec4f const& aRight ) noexcept
 
 // Functions:
 
+Mat44f invert( Mat44f const& aM ) noexcept;
+
+inline
+Mat44f transpose( Mat44f const& aM ) noexcept
+{
+	Mat44f ret;
+	for( std::size_t i = 0; i < 4; ++i )
+	{
+		for( std::size_t j = 0; j < 4; ++j )
+			ret(j,i) = aM(i,j);
+	}
+	return ret;
+}
+
 inline
 Mat44f make_rotation_x( float aAngle ) noexcept
 {
