@@ -30,7 +30,7 @@ namespace
 	constexpr float kPi_ = 3.1415926f;
 
 	//Camera state and constant values.
-	constexpr float kMovementPerSecond_ = 5.f; // units per second
+	constexpr float kMovementPerSecond_ = 10.f; // units per second
 	constexpr float kMovementModNeg_ = 2.5f;
 	constexpr float kMovementModPos_ = 5.f;
 	constexpr float kMouseSensitivity_ = 0.01f; // radians per pixel
@@ -45,11 +45,24 @@ namespace
 			bool actionSpeedUp, actionSlowDown;
 
 			float phi, theta;
-			float radius;
 
 			float lastX, lastY;
-			float X, Y, Z;
+			// Camera position, direction faced and up vector.
+			Vec3f cameraPos = { 0.f, -3.f, -3.f };
+			Vec3f cameraFront = {0.f, 0.f, 1.f};
+			Vec3f cameraUp = { 0.f, 1.f, 0.f };
+
 		} camControl;
+	};
+
+	//Point light struct
+	struct PointLight {
+		Vec3f position;
+		float constant;
+		float linear;
+		float quadratic;
+		Vec3f ambient;
+		Vec3f diffuse;
 	};
 
 	void glfw_callback_error_( int, char const* );
@@ -174,8 +187,6 @@ int main() try
 		{ GL_FRAGMENT_SHADER, "assets/default.frag" }
 		});
 	state.prog = &prog;
-	state.camControl.radius = 10.f;
-	state.camControl.Y = -3.f;
 
 	// Animation state
 	auto last = Clock::now();
@@ -208,19 +219,8 @@ int main() try
 	int rows = 3;
 	for (float i = 0; i < rows; i++)
 		for (float l = 0; l < 2; l++)
-			besties.emplace_back(make_cylinder( 
-				true, 18, Vec3f{1, 0, 1}, make_scaling( .5f, 5.f, .5f ) * make_translation( { 4.f - l*8.f, 0.f, 9.f + i*5.f }) * make_rotation_z( 3.141592f / 2.f )));
+			besties.emplace_back(make_change(pillar, make_translation({ 4.f - l * 8.f, 0.f, 9.f + i * 5.f }) * make_rotation_z(3.141592f / 2.f)));
 
-	//for (auto idx :bestie.positions )
-	//	printf("INDICES =(%f,%f,%f)", idx.x,idx.y,idx.z);
-			//besties.emplace_back(bestie);
-	//auto aMeshData = make_cylinder( true, 18, {1, 0, 1}, make_rotation_z( 3.141592f / 2.f )* make_scaling( 8.f, 2.f, 2.f ));
-	//besties.emplace_back(aMeshData);
-
-	//auto aMeshData = make_div_cylinder( true, 18, {1, 0, 1}, make_scaling( 5.f, 1.f, 1.f ), 16);
-	//besties.emplace_back(testCylinder);
-	//besties.emplace_back(aMeshData);
-	//GLuint vao = create_vao(aMeshData);
 	GLuint vao = create_vaoM(&besties[0],11);
 	printf("floor =(%ld)", floor.positions.size());
 	printf("pillar =(%ld)", pillar.positions.size());
@@ -390,17 +390,16 @@ int main() try
 		else
 			speedChange = 0;
 		// Update camera state based on keyboard input.
+		//Forward, backward
 		if (state.camControl.forward) {
 			state.camControl.radius -= (kMovementPerSecond_ + speedChange) * dt;
 			//state.camControl.Z += (kMovementPerSecond_ + speedChange) * dt * projection(0,0) ;
 			//state.camControl.X += (kMovementPerSecond_ + speedChange) * dt * projection(2,2) ;
 			state.camControl.Z += (kMovementPerSecond_ + speedChange) * dt;// * std::sin(state.camControl.phi) ;
 		} else if (state.camControl.backward) {
-			state.camControl.radius += (kMovementPerSecond_ + speedChange) * dt;
-			state.camControl.Z -= (kMovementPerSecond_ + speedChange) * dt;
+			state.camControl.cameraPos -= state.camControl.cameraFront *  (kMovementPerSecond_ + speedChange) * dt;
 		}
-
-		//Left right
+		//Left, right
 		if (state.camControl.left) {
 			state.camControl.radius -= (kMovementPerSecond_ + speedChange) * dt;
 			state.camControl.X += (kMovementPerSecond_ + speedChange) * dt;// * std::sin(projection(2,2));
@@ -408,14 +407,11 @@ int main() try
 			state.camControl.radius += (kMovementPerSecond_ + speedChange) * dt;
 			state.camControl.X -= (kMovementPerSecond_ + speedChange) * dt;// * projection(1,1);;
 		}
-
-		//Up down
+		//Up, down
 		if (state.camControl.up) {
-			state.camControl.radius -= (kMovementPerSecond_ + speedChange) * dt;
-			state.camControl.Y += (kMovementPerSecond_ + speedChange) * dt;
+			state.camControl.cameraPos.y += (kMovementPerSecond_ + speedChange) * dt;
 		}else if (state.camControl.down) {
-			state.camControl.radius += (kMovementPerSecond_ + speedChange) * dt;
-			state.camControl.Y -= (kMovementPerSecond_ + speedChange) * dt;
+			state.camControl.cameraPos.y -= (kMovementPerSecond_ + speedChange) * dt;
 		}
 
 		if (state.camControl.radius <= 0.1f)
@@ -434,7 +430,7 @@ int main() try
 		// Draw scene
 		OGL_CHECKPOINT_DEBUG();
 
-		//TODO: draw frame
+		//Draw frame
 		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 		glUseProgram( prog.programId() );
 
@@ -640,7 +636,7 @@ namespace
 						state->camControl.down = false;
 				}
 				
-				//Speed modifiers
+				//Speed modifiers Lshift and Lctrl
 				if (GLFW_KEY_LEFT_SHIFT == aKey)
 				{
 					if (GLFW_PRESS == aAction)
@@ -680,13 +676,23 @@ namespace
 				auto const dx = float(aX - state->camControl.lastX);
 				auto const dy = float(aY - state->camControl.lastY);
 
-				state->camControl.phi += dx * kMouseSensitivity_;
 
+				//Yaw
+				state->camControl.phi += dx * kMouseSensitivity_;
+				//Pitch
 				state->camControl.theta += dy * kMouseSensitivity_;
 				if (state->camControl.theta > kPi_ / 2.f)
 					state->camControl.theta = kPi_ / 2.f;
 				else if (state->camControl.theta < -kPi_ / 2.f)
 					state->camControl.theta = -kPi_ / 2.f;
+
+				//Update the camera direction based on yaw and pitch.
+				Vec3f front = { -(sinf(state->camControl.phi) * cosf(state->camControl.theta)),
+					sinf(state->camControl.theta),
+					cosf(state->camControl.phi)* cosf(state->camControl.theta)
+				};
+				//Normalize direction.
+				state->camControl.cameraFront = normalize(front);
 			}
 
 			state->camControl.lastX = float(aX);
