@@ -267,6 +267,7 @@ int main() try
 		if (angle >= 2.f * kPi_)
 			angle -= 2.f * kPi_;
 
+		//Camera speed decision.
 		float speedChange = 0;
 		if (state.camControl.actionSpeedUp)
 			speedChange = kMovementModPos_;
