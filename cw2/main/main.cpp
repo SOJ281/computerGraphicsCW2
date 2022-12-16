@@ -44,6 +44,7 @@ namespace
 			float phi, theta;
 
 			float lastX, lastY;
+			// Camera position, direction faced and up vector.
 			Vec3f cameraPos = { 0.f, -3.f, -3.f };
 			Vec3f cameraFront = {0.f, 0.f, 1.f};
 			Vec3f cameraUp = { 0.f, 1.f, 0.f };
@@ -51,6 +52,7 @@ namespace
 		} camControl;
 	};
 
+	//Point light struct
 	struct PointLight {
 		Vec3f position;
 		float constant;
@@ -216,14 +218,13 @@ int main() try
 	for (float i = 0; i < rows; i++)
 		for (float l = 0; l < 2; l++)
 			besties.emplace_back(make_change(pillar, make_translation({ 4.f - l * 8.f, 0.f, 9.f + i * 5.f }) * make_rotation_z(3.141592f / 2.f)));
-	besties.emplace_back(pillar);
 
-	GLuint vao = create_vaoM(&besties[0],12);
+	GLuint vao = create_vaoM(&besties[0],11);
 	printf("floor =(%ld)", floor.positions.size());
 	printf("pillar =(%ld)", pillar.positions.size());
 
 
-	int vertexCount = bestie.positions.size()*friends*friends + floor.positions.size() + pillar.positions.size() * rows*2 + pillar.positions.size();
+	int vertexCount = bestie.positions.size()*friends*friends + floor.positions.size() + pillar.positions.size() * rows*2;
 	float sunXloc = -1.f;
 
 	OGL_CHECKPOINT_ALWAYS();
@@ -274,20 +275,19 @@ int main() try
 		else
 			speedChange = 0;
 		// Update camera state based on keyboard input.
+		//Forward, backward
 		if (state.camControl.forward) {
 			state.camControl.cameraPos += state.camControl.cameraFront * (kMovementPerSecond_ + speedChange) * dt;
 		} else if (state.camControl.backward) {
 			state.camControl.cameraPos -= state.camControl.cameraFront *  (kMovementPerSecond_ + speedChange) * dt;
 		}
-
-		//Left right
+		//Left, right
 		if (state.camControl.left) {
 			state.camControl.cameraPos -= normalize(cross(state.camControl.cameraFront, state.camControl.cameraUp)) * (kMovementPerSecond_ + speedChange) * dt;
 		} else if (state.camControl.right) {
 			state.camControl.cameraPos += normalize(cross(state.camControl.cameraFront, state.camControl.cameraUp)) * (kMovementPerSecond_ + speedChange) * dt;
 		}
-
-		//Up down
+		//Up, down
 		if (state.camControl.up) {
 			state.camControl.cameraPos.y += (kMovementPerSecond_ + speedChange) * dt;
 		}else if (state.camControl.down) {
@@ -297,16 +297,17 @@ int main() try
 		//TODO: define and compute projCameraWorld matrix
 		Mat44f model2world = make_rotation_y(0);
 
-		Mat44f Rx = make_rotation_x( state.camControl.theta );
-		Mat44f Ry = make_rotation_y( state.camControl.phi );
-		Mat44f world2camera = make_translation(state.camControl.cameraPos);
-
-		//Camera view
+		//Camera fov view
 		Mat44f projection = make_perspective_projection(
 			60.f * 3.1415926f / 180.f,
-			fbwidth/float(fbheight),
+			fbwidth / float(fbheight),
 			0.1f, 100.0f
 		);
+		//Rotate the camera.
+		Mat44f Rx = make_rotation_x( state.camControl.theta );
+		Mat44f Ry = make_rotation_y( state.camControl.phi );
+		//Translate the world based on camera position.
+		Mat44f world2camera = make_translation(state.camControl.cameraPos);
 		projection = projection * Rx * Ry;
 
 		Mat44f projCameraWorld = projection * world2camera * model2world;
@@ -334,7 +335,7 @@ int main() try
 		// Draw scene
 		OGL_CHECKPOINT_DEBUG();
 
-		//TODO: draw frame
+		//Draw frame
 		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 		glUseProgram( prog.programId() );
 
@@ -495,7 +496,7 @@ namespace
 						state->camControl.down = false;
 				}
 				
-				//Speed modifiers
+				//Speed modifiers Lshift and Lctrl
 				if (GLFW_KEY_LEFT_SHIFT == aKey)
 				{
 					if (GLFW_PRESS == aAction)
@@ -545,12 +546,13 @@ namespace
 				else if (state->camControl.theta < -kPi_ / 2.f)
 					state->camControl.theta = -kPi_ / 2.f;
 
+				//Update the camera direction based on yaw and pitch.
 				Vec3f front = { -(sinf(state->camControl.phi) * cosf(state->camControl.theta)),
 					sinf(state->camControl.theta),
 					cosf(state->camControl.phi)* cosf(state->camControl.theta)
 				};
+				//Normalize direction.
 				state->camControl.cameraFront = normalize(front);
-				printf("Camera: %f, %f, %f\n", state->camControl.cameraFront.x, state->camControl.cameraFront.x, state->camControl.cameraFront.z);
 			}
 
 			state->camControl.lastX = float(aX);
