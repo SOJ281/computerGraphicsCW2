@@ -349,13 +349,42 @@ int main() try
 		if (angle >= 2.f * kPi_)
 			angle -= 2.f * kPi_;
 
+
+
+		//Camera speed decision.
+		float speedChange = 0;
+		if (state.camControl.actionSpeedUp)
+			speedChange = kMovementModPos_;
+		else if (state.camControl.actionSlowDown)
+			speedChange = -kMovementModNeg_;
+		else
+			speedChange = 0;
+		// Update camera state based on keyboard input.
+		//Forward, backward
+		if (state.camControl.forward) {
+			state.camControl.cameraPos += state.camControl.cameraFront * (kMovementPerSecond_ + speedChange) * dt;
+		} else if (state.camControl.backward) {
+			state.camControl.cameraPos -= state.camControl.cameraFront *  (kMovementPerSecond_ + speedChange) * dt;
+		}
+		//Left, right
+		if (state.camControl.left) {
+			state.camControl.cameraPos -= normalize(cross(state.camControl.cameraFront, state.camControl.cameraUp)) * (kMovementPerSecond_ + speedChange) * dt;
+		} else if (state.camControl.right) {
+			state.camControl.cameraPos += normalize(cross(state.camControl.cameraFront, state.camControl.cameraUp)) * (kMovementPerSecond_ + speedChange) * dt;
+		}
+		//Up, down
+		if (state.camControl.up) {
+			state.camControl.cameraPos.y += (kMovementPerSecond_ + speedChange) * dt;
+		}else if (state.camControl.down) {
+			state.camControl.cameraPos.y -= (kMovementPerSecond_ + speedChange) * dt;
+		}
+
+
 		//TODO: define and compute projCameraWorld matrix
 		Mat44f model2world = make_rotation_y(0);
 		Mat44f Rx = make_rotation_x( state.camControl.theta );
 		Mat44f Ry = make_rotation_y( state.camControl.phi );
-		Mat44f T = make_translation( { 0.f, 0.f, -state.camControl.radius } );
-		Mat44f moving = make_translation( { state.camControl.X, state.camControl.Y, state.camControl.Z } );
-		Mat44f world2camera = moving;
+		Mat44f world2camera = make_translation(state.camControl.cameraPos);
 		//Mat44f world2camera = T*Rx*Ry;
 		//Mat44f world2camera = make_translation( { 0.f, 0.f, -10.f } );
 
@@ -382,41 +411,6 @@ int main() try
 			printf("normalMatrix: (%f, %f, %f)\n", projCameraWorld.v[i*3],projCameraWorld.v[i*3+1],projCameraWorld.v[i*3+2]);
 		*/
 
-		float speedChange = 0;
-		if (state.camControl.actionSpeedUp)
-			speedChange = kMovementModPos_;
-		else if (state.camControl.actionSlowDown)
-			speedChange = -kMovementModNeg_;
-		else
-			speedChange = 0;
-		// Update camera state based on keyboard input.
-		//Forward, backward
-		if (state.camControl.forward) {
-			state.camControl.radius -= (kMovementPerSecond_ + speedChange) * dt;
-			//state.camControl.Z += (kMovementPerSecond_ + speedChange) * dt * projection(0,0) ;
-			//state.camControl.X += (kMovementPerSecond_ + speedChange) * dt * projection(2,2) ;
-			state.camControl.Z += (kMovementPerSecond_ + speedChange) * dt;// * std::sin(state.camControl.phi) ;
-		} else if (state.camControl.backward) {
-			state.camControl.cameraPos -= state.camControl.cameraFront *  (kMovementPerSecond_ + speedChange) * dt;
-		}
-		//Left, right
-		if (state.camControl.left) {
-			state.camControl.radius -= (kMovementPerSecond_ + speedChange) * dt;
-			state.camControl.X += (kMovementPerSecond_ + speedChange) * dt;// * std::sin(projection(2,2));
-		} else if (state.camControl.right) {
-			state.camControl.radius += (kMovementPerSecond_ + speedChange) * dt;
-			state.camControl.X -= (kMovementPerSecond_ + speedChange) * dt;// * projection(1,1);;
-		}
-		//Up, down
-		if (state.camControl.up) {
-			state.camControl.cameraPos.y += (kMovementPerSecond_ + speedChange) * dt;
-		}else if (state.camControl.down) {
-			state.camControl.cameraPos.y -= (kMovementPerSecond_ + speedChange) * dt;
-		}
-
-		if (state.camControl.radius <= 0.1f)
-			state.camControl.radius = 0.1f;
-
 
 		sunXloc += .01f;
 		if (sunXloc > .99f)
@@ -441,7 +435,7 @@ int main() try
 		glUniform3f( glGetUniformLocation(prog.programId(), "uLightDiffuse"), .3f, 0.3f, .3f ); //lightDiffuse
 		//glUniform3f( 4, 0.05f, 0.05f, 0.05f ); //uSceneAmbient
 		glUniform3f( glGetUniformLocation(prog.programId(), "uSceneAmbient"), 0.05f, 0.05f, 0.05f ); //uSceneAmbient
-		glUniform3f( glGetUniformLocation(prog.programId(), "viewPos"), state.camControl.X, state.camControl.Y, state.camControl.Z ); //uSceneAmbient
+		glUniform3f( glGetUniformLocation(prog.programId(), "viewPos"), state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z ); //uSceneAmbient
 
 
 		
