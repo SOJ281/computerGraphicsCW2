@@ -8,6 +8,7 @@
 layout( location = 0 ) in vec3 iPosition;
 layout( location = 1 ) in vec3 iColor;
 layout( location = 2 ) in vec3 iNormal;
+layout( location = 3 ) in vec2 iTexCoords;
 
 uniform mat4 uProjCameraWorld;
 uniform mat3 uNormalMatrix;
@@ -17,6 +18,7 @@ uniform mat4 transformation;
 
 out vec3 v2fColor; // v2f = vertex to fragment
 out vec3 v2fNormal;
+out vec2 v2fTexCoords;
 //out float lightDistance;
 out vec3 fragPos;
 void main() {
@@ -26,6 +28,8 @@ void main() {
     //vec3 tPosition = iPosition * transformation;
 
     v2fColor = iColor;
+    v2fTexCoords = iTexCoords;
+
 
     gl_Position = uProjCameraWorld * vec4( iPosition, 1.0 );
     v2fNormal = normalize(uNormalMatrix * iNormal);

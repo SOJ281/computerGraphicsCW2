@@ -18,9 +18,10 @@
 
 #include "defaults.hpp"
 #include "cylinder.hpp"
-#include "loadcustom.hpp"
+//#include "loadcustom.hpp"
 #include <string>
 #include <cstring>
+#include <stb_image.h>
 
 
 namespace
@@ -34,6 +35,8 @@ namespace
 	constexpr float kMovementModNeg_ = 2.5f;
 	constexpr float kMovementModPos_ = 5.f;
 	constexpr float kMouseSensitivity_ = 0.01f; // radians per pixel
+
+	
 	struct State_
 	{
 		ShaderProgram* prog;
@@ -64,6 +67,8 @@ namespace
 		Vec3f ambient;
 		Vec3f diffuse;
 	};
+
+	unsigned int loadTexture(const char *path);
 
 	void glfw_callback_error_( int, char const* );
 
@@ -246,6 +251,9 @@ int main() try
 		Vec3f{0.992157f, 0.941176f, 0.807843f},
 		0.21794872f
 	};
+
+	unsigned int ourSaviour = loadTexture("assets/markus.png");
+	unsigned int ourBlank = loadTexture("assets/Solid_white.png");
 	
 
 
@@ -428,6 +436,12 @@ int main() try
 		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 		glUseProgram( prog.programId() );
 
+		 //lightingShader.setInt("material.diffuse", 0);
+    //lightingShader.setInt("material.specular", 1);
+		glUniform1i(glGetUniformLocation(prog.programId(), "texture.diffuse"), 0); //lightDir uLightDir
+		glUniform1i(glGetUniformLocation(prog.programId(), "texture.specular"), 1); //lightDir uLightDir
+
+
 
 		//glUniform3fv( 2, 1, &lightDir.x ); //lightDir uLightDir
 		glUniform3fv(glGetUniformLocation(prog.programId(), "uLightDir"), 1, &lightDir.x ); //lightDir uLightDir
@@ -455,8 +469,6 @@ int main() try
 		//scottscott681
 		//gazmaz99
 
-
-
 		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "uProjCameraWorld"), 1, GL_TRUE, projCameraWorld.v );
 		glUniformMatrix3fv(glGetUniformLocation(prog.programId(), "uNormalMatrix"),1, GL_TRUE, normalMatrix.v);
 		Mat44f blankMatrix = make_translation( { 1.f, 1.f, 1.f } );
@@ -468,6 +480,9 @@ int main() try
 		
 		glBindVertexArray( vao );
 		//int vertexCount = floor.positions.size() + frontWall.positions.size() * wallBits + sideWall.positions.size() * sideWallBits + pillar.positions.size() * rows*2;
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, ourSaviour);
 
 		glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &stone.ambient.x );
 		glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &stone.diffuse.x );
@@ -693,7 +708,36 @@ namespace
 			state->camControl.lastY = float(aY);
 		}
 	}
+	unsigned int loadTexture(char const * path) {
+	
+		unsigned int textureID;
+		glGenTextures(1, &textureID);
+
+		int width, height, nrComponents;
+		unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
+		GLenum format;
+		if (nrComponents == 1)
+			format = GL_RED;
+		else if (nrComponents == 3)
+			format = GL_RGB;
+		else if (nrComponents == 4)
+			format = GL_RGBA;
+
+		glBindTexture(GL_TEXTURE_2D, textureID);
+		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		stbi_image_free(data);
+
+		return textureID;
+	}
 }
+
 
 namespace
 {
@@ -708,4 +752,3 @@ namespace
 			glfwDestroyWindow( window );
 	}
 }
-

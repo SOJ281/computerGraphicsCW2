@@ -7,6 +7,7 @@
 #include <cstdio>
 
 #include "../vmlib/vec3.hpp"
+#include "../vmlib/vec2.hpp"
 
 #include "../vmlib/mat33.hpp"
 #include "../vmlib/mat44.hpp"
@@ -16,6 +17,7 @@ struct SimpleMeshData
 	std::vector<Vec3f> positions;
 	std::vector<Vec3f> colors;
 	std::vector<Vec3f> normals;
+	std::vector<Vec2f> texCoords;
 	std::vector<uint32_t> indices;
 	//std::vector<std::uint32_t> indices;
 };
