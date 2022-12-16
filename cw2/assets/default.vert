@@ -11,6 +11,7 @@ layout( location = 2 ) in vec3 iNormal;
 
 uniform mat4 uProjCameraWorld;
 uniform mat3 uNormalMatrix;
+uniform mat4 transformation;
 
 //layout( location = 5 ) uniform vec3 uLightPos;
 
@@ -18,8 +19,11 @@ out vec3 v2fColor; // v2f = vertex to fragment
 out vec3 v2fNormal;
 //out float lightDistance;
 out vec3 fragPos;
-void main()
-{
+void main() {
+	vec4 t = transformation * vec4( iPosition, 1.0 );
+	t /= t.w;
+	vec3 tPosition = vec3( t.x, t.y, t.z );
+    //vec3 tPosition = iPosition * transformation;
 
     v2fColor = iColor;
 

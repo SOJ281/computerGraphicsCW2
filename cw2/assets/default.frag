@@ -37,27 +37,34 @@ struct PointLight {
 uniform PointLight pointLights[6];
 
 
+struct Material {
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;    
+    float shininess;
+}; 
+uniform Material material;
+
+
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 
 void main() {
     vec3 normal = normalize(v2fNormal);
     oColor = normal;
-    
-
-    //float attenuation = 1.0 / (0.1f + .09f * lightDistance + 0.032f * (lightDistance * lightDistance)); 
-    //vec3 sceneAmbient = uSceneAmbient * attenuation;
-    //vec3 lightDiffuse = uLightDiffuse * attenuation;
-
-    //float nDotL = max( 0.0, dot( normal, uLightDir ) );
-    //oColor = (uSceneAmbient + nDotL * uLightDiffuse) * v2fColor;
     vec3 viewDir = normalize(viewPos - fragPos);
 
     float nDotL = max( 0.0, dot( normal, uLightDir ) );
 
-    vec3 result = (uSceneAmbient + nDotL * uLightDiffuse) * v2fColor;
+
+    vec3 reflectDir = reflect(-uLightDir, normal);  
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    vec3 specular = uSpecular * (spec * material.specular); 
+
+    //vec3 result = (uSceneAmbient*material.ambient + nDotL * uLightDiffuse * material.diffuse) * v2fColor;
+    vec3 result = (uSceneAmbient*material.ambient + nDotL * uLightDiffuse * material.diffuse + specular) * v2fColor;
 
     // phase 2: point lights
-    for(int i = 0; i < 1; i++)
+    for(int i = 0; i < 6; i++)
         result += CalcPointLight(pointLights[i], normal, fragPos, viewDir);    
 
     oColor = result;
@@ -80,9 +87,9 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 
     // combine results
-    vec3 ambient = light.ambient;
-    vec3 diffuse = light.diffuse * diff;
-    vec3 specular = light.specular * spec;
+    vec3 ambient = light.ambient*material.ambient;
+    vec3 diffuse = light.diffuse * diff * material.diffuse;
+    vec3 specular = light.specular * spec * material.specular;
     ambient *= attenuation;
     diffuse *= attenuation;
     spec *= attenuation;

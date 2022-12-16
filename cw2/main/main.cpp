@@ -20,6 +20,8 @@
 #include "cylinder.hpp"
 #include "loadcustom.hpp"
 #include <string>
+#include <cstring>
+
 
 namespace
 {
@@ -224,13 +226,36 @@ int main() try
 	printf("pillar =(%ld)", pillar.positions.size());
 	int vertexCount = bestie.positions.size() *friends * friends + floor.positions.size() +pillar.positions.size() * rows*2;*/
 
+	struct Material {
+		Vec3f ambient;
+		Vec3f diffuse;
+		Vec3f specular;    
+		float shininess;
+	}; 
+	//Random guess
+	Material stone = {
+		Vec3f{.01f, .01f, .01f},
+		Vec3f{.4f, .4f, .4f},
+		Vec3f{0.f, 0.f, 0.f},
+		.4f
+	};
+	//From Here http://devernay.free.fr/cours/opengl/materials.html
+	Material brass = {
+		Vec3f{0.329412f, 0.223529f, 0.027451f},
+		Vec3f{0.780392f, 0.568627f, 0.113725f},
+		Vec3f{0.992157f, 0.941176f, 0.807843f},
+		0.21794872f
+	};
+	
+
+
 	std::vector<SimpleMeshData> chapel;
 
 	auto floor = make_cube( Vec3f{1, 1, 1}, make_scaling( 200.f, 2.f, 200.f ) * make_translation( { 0.f, -1.f, 0.f }));
 	chapel.emplace_back(floor);
 
 	//auto frontWall = make_cube( Vec3f{1, 1, 1}, make_scaling( 5.f, 10.f, 0.5f ) * make_translation( { 3.5f, 5.f, 2.25f }));
-	auto frontWall = make_cube( Vec3f{1, 1, 1}, make_scaling( 10.f, 15.f, 0.5f )); //so 10 meter
+	auto frontWall = make_cube( Vec3f{.2f, .2f, .2f}, make_scaling( 10.f, 15.f, 0.5f )); //so 10 meter
 	int wallBits = 2;
 	for (float i = 0; i < wallBits; i++)
 		//chapel.emplace_back(make_cube( Vec3f{0, 1, 1}, make_translation( { 3.5f - 7.f*i, 0.f, 5.f }) * make_scaling( 5.f, 10.f, 0.5f )));
@@ -266,16 +291,23 @@ int main() try
 			p1.constant = 1.f;
 			p1.linear = 0.3f;
 			p1.quadratic = 0.32f;
-			p1.ambient = Vec3f{ 0.f, 1.f, 0.f };
-			p1.diffuse = Vec3f{ 0.f, 1.f, 0.f };
-			p1.specular = Vec3f{ 0.f, 1.f, 0.f };
+			p1.ambient = Vec3f{ 0.f, 0.f, 1.f };
+			p1.diffuse = Vec3f{ 0.f, 1.f, 1.f };
+			p1.specular = Vec3f{ 1.f, 0.f, 0.f };
 			PointLightData.emplace_back(p1);
 		}
 
+	auto door = make_cube( Vec3f{1, 1, 1}, make_scaling( 1.f, 1.f, 1.f ));
+	//int sideWallBits = 2;
+	//for (float i = 0; i < sideWallBits; i++)
+		//chapel.emplace_back(make_cube( Vec3f{0, 1, 1}, make_translation( { 3.5f - 7.f*i, 0.f, 5.f }) * make_scaling( 5.f, 10.f, 0.5f )));
+	chapel.emplace_back(door);
 
-	int vertexCount = floor.positions.size() + frontWall.positions.size() * wallBits + sideWall.positions.size() * sideWallBits + pillar.positions.size() * rows*2;
+
+	int vertexCount = floor.positions.size() + frontWall.positions.size() * wallBits + sideWall.positions.size() * sideWallBits 
+	+ pillar.positions.size() * rows*2 + door.positions.size();
 	float sunXloc = -1.f;
-	GLuint vao = create_vaoM(&chapel[0], 1 + wallBits + sideWallBits + rows*2);
+	GLuint vao = create_vaoM(&chapel[0], 1 + wallBits + sideWallBits + rows*2 + 1);
 
 	OGL_CHECKPOINT_ALWAYS();
 
@@ -334,17 +366,21 @@ int main() try
 		);
 		projection = projection*Rx*Ry;
 
+		door = make_change( door, make_rotation_y(angle) );
+
+
+		Mat44f projCameraWorld = projection * world2camera * model2world;
+		Mat33f normalMatrix = mat44_to_mat33( transpose(invert(model2world)) );
+		/*
 		for (int i = 0; i< 4; i++)
 			printf("projection: (%f, %f, %f, %f)\n", projection.v[i*4],projection.v[i*4+1],projection.v[i*4+2],projection.v[i*4+3]);
 		printf("\n");
-		Mat44f projCameraWorld = projection * world2camera * model2world;
-		Mat33f normalMatrix = mat44_to_mat33( transpose(invert(model2world)) );
 		for (int i = 0; i< 4; i++)
 			printf("projCameraWorld: (%f, %f, %f, %f)\n", projCameraWorld.v[i*4],projCameraWorld.v[i*4+1],projCameraWorld.v[i*4+2],projCameraWorld.v[i*4+3]);
 
 		for (int i = 0; i< 3; i++)
 			printf("normalMatrix: (%f, %f, %f)\n", projCameraWorld.v[i*3],projCameraWorld.v[i*3+1],projCameraWorld.v[i*3+2]);
-
+		*/
 
 		float speedChange = 0;
 		if (state.camControl.actionSpeedUp)
@@ -406,45 +442,68 @@ int main() try
 		//glUniform3fv( 2, 1, &lightDir.x ); //lightDir uLightDir
 		glUniform3fv(glGetUniformLocation(prog.programId(), "uLightDir"), 1, &lightDir.x ); //lightDir uLightDir
 		//glUniform3f( 3, 0.f, 0.f, 0.f ); //lightDiffuse
-		glUniform3f( glGetUniformLocation(prog.programId(), "uLightDiffuse"), .1f, 0.3f, .1f ); //lightDiffuse
+		glUniform3f( glGetUniformLocation(prog.programId(), "uLightDiffuse"), .3f, 0.3f, .3f ); //lightDiffuse
 		//glUniform3f( 4, 0.05f, 0.05f, 0.05f ); //uSceneAmbient
 		glUniform3f( glGetUniformLocation(prog.programId(), "uSceneAmbient"), 0.05f, 0.05f, 0.05f ); //uSceneAmbient
 		glUniform3f( glGetUniformLocation(prog.programId(), "viewPos"), state.camControl.X, state.camControl.Y, state.camControl.Z ); //uSceneAmbient
 
-		//glUniform3fv( 10, &pl.position.x ); //uSceneAmbient
-		// point light 1
-        //lightingShader.setVec3("pointLights[0].position", pointLightPositions[0]);
+
+		
 		#include <string>
-
 		for (int i = 0; i < 6; i++) {
-			//std::array<char, 10> str;
-			//std::to_chars(str.data(), str.data() + str.size(), 42);
-			//char* s = "pointLights["+std::to_string(i)+"].position";
-			const char number[] = "pointLights["+std::to_string(i)[0]+"].position";
-			const char * end = "].position";
-			glUniform3fv(glGetUniformLocation(prog.programId(), "pointLights["+number), 1, &PointLightData[0].position.x ); //lightDir uLightDir
-			glUniform1f(glGetUniformLocation(prog.programId(), "pointLights[0].constant"), PointLightData[0].constant ); //lightDir uLightDir
-			glUniform1f(glGetUniformLocation(prog.programId(), "pointLights[0].linear"), PointLightData[0].linear ); //lightDir uLightDir
-			glUniform1f(glGetUniformLocation(prog.programId(), "pointLights[0].quadratic"), PointLightData[0].quadratic ); //lightDir uLightDir
-			glUniform3fv(glGetUniformLocation(prog.programId(), "pointLights[0].ambient"), 1, &PointLightData[0].ambient.x ); //lightDir uLightDir
-			glUniform3fv(glGetUniformLocation(prog.programId(), "pointLights[0].diffuse"), 1, &PointLightData[0].diffuse.x ); //lightDir uLightDir
-			glUniform3fv(glGetUniformLocation(prog.programId(), "pointLights[0].specular"), 1, &PointLightData[0].specular.x ); //lightDir uLightDir
+
+			std::string number = std::to_string(i);
+
+			glUniform3fv(glGetUniformLocation(prog.programId(), ("pointLights["+number+"].position").c_str()), 1, &PointLightData[i].position.x ); //lightDir uLightDir
+			glUniform1f(glGetUniformLocation(prog.programId(), ("pointLights["+number+"].constant").c_str()), PointLightData[i].constant ); //lightDir uLightDir
+			glUniform1f(glGetUniformLocation(prog.programId(), ("pointLights["+number+"].linear").c_str()), PointLightData[i].linear ); //lightDir uLightDir
+			glUniform1f(glGetUniformLocation(prog.programId(), ("pointLights["+number+"].quadratic").c_str()), PointLightData[i].quadratic ); //lightDir uLightDir
+			glUniform3fv(glGetUniformLocation(prog.programId(), ("pointLights["+number+"].ambient").c_str()), 1, &PointLightData[i].ambient.x ); //lightDir uLightDir
+			glUniform3fv(glGetUniformLocation(prog.programId(), ("pointLights["+number+"].diffuse").c_str()), 1, &PointLightData[i].diffuse.x ); //lightDir uLightDir
+			glUniform3fv(glGetUniformLocation(prog.programId(), ("pointLights["+number+"].specular").c_str()), 1, &PointLightData[i].specular.x ); //lightDir uLightDir
 		}
+		//scottscott681
+		//gazmaz99
 
 
-		//glUniform3f(5, 0.f, 6.f, 0.f  ); //uSceneAmbient
 
-		//glUniformMatrix4fv( 0, 1, GL_TRUE, projCameraWorld.v );
 		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "uProjCameraWorld"), 1, GL_TRUE, projCameraWorld.v );
-		//glUniformMatrix3fv(1,1, GL_TRUE, normalMatrix.v);
 		glUniformMatrix3fv(glGetUniformLocation(prog.programId(), "uNormalMatrix"),1, GL_TRUE, normalMatrix.v);
+		Mat44f blankMatrix = make_translation( { 1.f, 1.f, 1.f } );
+		glUniformMatrix3fv(glGetUniformLocation(prog.programId(), "transformation"),1, GL_TRUE, blankMatrix.v);
 
 		
 		//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 		glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 		
 		glBindVertexArray( vao );
-		glDrawArrays( GL_TRIANGLES, 0, vertexCount);
+		//int vertexCount = floor.positions.size() + frontWall.positions.size() * wallBits + sideWall.positions.size() * sideWallBits + pillar.positions.size() * rows*2;
+
+		glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &stone.ambient.x );
+		glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &stone.diffuse.x );
+		glUniform3fv(glGetUniformLocation(prog.programId(), "material.specular"), 1, &stone.specular.x );
+		glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"),stone.shininess);
+		int counter = floor.positions.size();
+		glDrawArrays( GL_TRIANGLES, 0, counter);
+
+		counter += frontWall.positions.size() * wallBits;
+		glDrawArrays( GL_TRIANGLES, 0, counter);
+
+		counter += sideWall.positions.size() * sideWallBits;
+		glDrawArrays( GL_TRIANGLES, 0, counter);
+
+		glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &brass.ambient.x );
+		glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &brass.diffuse.x );
+		glUniform3fv(glGetUniformLocation(prog.programId(), "material.specular"), 1, &brass.specular.x );
+		glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"),brass.shininess);
+		counter += pillar.positions.size() * rows*2;
+		glDrawArrays( GL_TRIANGLES, 0, counter);
+
+
+		counter += door.positions.size();
+		glDrawArrays( GL_TRIANGLES, 0, counter);
+
+
 		//glDrawElements( GL_TRIANGLES, vertexCount, GL_UNSIGNED_INT, NULL);
 		//glDrawElements( GL_TRIANGLES, vertexCount, GL_UNSIGNED_BYTE, NULL);
 		//glDrawElements( GL_TRIANGLES, vertexCount, GL_UNSIGNED_SHORT, NULL);
@@ -473,16 +532,17 @@ catch( std::exception const& eErr )
 	return 1;
 }
 
-
+/*
 char * converter(std::string str) {
-	char arr[str.length() + 1]; 
+	int n = str.length();
+	char arr[n + 1]; 
 	for (int x = 0; x < sizeof(arr); x++) { 
 		arr[x] = str[x]; 
 		cout << arr[x]; 
 	} 
 	return arr;
 }
-
+*/
 
 //GLFW key inputs for movement and camera rotation.
 namespace
