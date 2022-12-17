@@ -5,7 +5,6 @@
 SimpleMeshData concatenate( SimpleMeshData aM, SimpleMeshData const& aN )
 {
 	aM.positions.insert( aM.positions.end(), aN.positions.begin(), aN.positions.end() );
-	aM.colors.insert( aM.colors.end(), aN.colors.begin(), aN.colors.end() );
 	aM.normals.insert( aM.normals.end(), aN.normals.begin(), aN.normals.end() );
 	//aM.indices.insert( aM.indices.end(), aN.indices.begin(), aN.indices.end() );
 	return aM;
@@ -24,6 +23,14 @@ SimpleMeshData make_change( SimpleMeshData aM, Mat44f aPreTransform ) {
 	return newMesh;
 }
 
+SimpleMeshData invert_normals(SimpleMeshData aM) {
+	SimpleMeshData newMesh = aM;
+
+	for( auto& p : newMesh.normals ) {
+		p = Vec3f{1,1,1} -p;
+	}
+	return newMesh;
+}
 
 GLuint create_vao( SimpleMeshData const& aMeshData ) {
 
@@ -31,16 +38,6 @@ GLuint create_vao( SimpleMeshData const& aMeshData ) {
 	glGenBuffers( 1, &positionVBO );
 	glBindBuffer( GL_ARRAY_BUFFER, positionVBO );
 	glBufferData( GL_ARRAY_BUFFER, aMeshData.positions.size() * sizeof(Vec3f), aMeshData.positions.data(), GL_STATIC_DRAW );
-
-
-	// Note: we can use sizeof(kPositions) because kPositions is defined as
-	// C/C++ array. Never use sizeof() on pointers or on classes such as
-	// std::vector!
-	GLuint colorVBO = 0;
-	glGenBuffers( 1, &colorVBO );
-	glBindBuffer( GL_ARRAY_BUFFER, colorVBO );
-	glBufferData( GL_ARRAY_BUFFER, aMeshData.colors.size() * sizeof(Vec3f), aMeshData.colors.data(), GL_STATIC_DRAW );
-
 
 	GLuint normalVBO = 0;
 	glGenBuffers( 1, &normalVBO );
@@ -62,27 +59,17 @@ GLuint create_vao( SimpleMeshData const& aMeshData ) {
 	glEnableVertexAttribArray(0);
 
 
-	glBindBuffer( GL_ARRAY_BUFFER, colorVBO );
-	glVertexAttribPointer(1, // location = 1 in vertex shader
+	glBindBuffer( GL_ARRAY_BUFFER, normalVBO );
+	glVertexAttribPointer(1, // location = 2 in vertex shader
 	3, GL_FLOAT, GL_FALSE, // 3 floats, not normalized to [0..1] (GL FALSE)
 	0, // see above
 	0 // see above
 	);
 	glEnableVertexAttribArray( 1 ); // Reset state
 
-
-	glBindBuffer( GL_ARRAY_BUFFER, normalVBO );
-	glVertexAttribPointer(2, // location = 2 in vertex shader
-	3, GL_FLOAT, GL_FALSE, // 3 floats, not normalized to [0..1] (GL FALSE)
-	0, // see above
-	0 // see above
-	);
-	glEnableVertexAttribArray( 2 ); // Reset state
-
 	glBindVertexArray( 0 );//poss
 	glBindBuffer( GL_ARRAY_BUFFER, 0 );//poss
 
-	glDeleteBuffers( 1, &colorVBO );
 	glDeleteBuffers( 1, &positionVBO );
 	glDeleteBuffers( 1, &normalVBO );
 
@@ -123,6 +110,7 @@ GLuint create_vaoM( SimpleMeshData * aMeshData , int number) {
 		printf("\n\npmax = %d\n", pMax);
 		//printf("posdone");
 
+/*
 		//Color
 		glGenBuffers( 1, &colorVBO );
 		glBindBuffer( GL_ARRAY_BUFFER, colorVBO );
@@ -136,7 +124,7 @@ GLuint create_vaoM( SimpleMeshData * aMeshData , int number) {
 			//printf("cSize%d = %d\n", i, cSize);
 			glBufferSubData(GL_ARRAY_BUFFER, cSize, aMeshData[i].colors.size()* sizeof(Vec3f), aMeshData[i].colors.data());
 			cSize += aMeshData[i].colors.size()* sizeof(Vec3f);
-		}
+		}*/
 
 		//normal
 		glGenBuffers( 1, &normalVBO );
@@ -195,19 +183,19 @@ GLuint create_vaoM( SimpleMeshData * aMeshData , int number) {
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 		glEnableVertexAttribArray(0);
 
-		glBindBuffer( GL_ARRAY_BUFFER, colorVBO );
+		//glBindBuffer( GL_ARRAY_BUFFER, colorVBO );
+		//glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		//glEnableVertexAttribArray( 1 ); // Reset state
+
+
+		glBindBuffer( GL_ARRAY_BUFFER, normalVBO );
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
 		glEnableVertexAttribArray( 1 ); // Reset state
 
 
-		glBindBuffer( GL_ARRAY_BUFFER, normalVBO );
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
-		glEnableVertexAttribArray( 2 ); // Reset state
-
-
 		glBindBuffer( GL_ARRAY_BUFFER, textureVBO );
-		glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 0, 0);
-		glEnableVertexAttribArray( 3 ); // Reset state
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, 0);
+		glEnableVertexAttribArray( 2 ); // Reset state
 
 		glBindVertexArray( 0 );//poss
 		glBindBuffer( GL_ARRAY_BUFFER, 0 );//poss
@@ -247,8 +235,8 @@ SimpleMeshData make_cube(Vec3f aColor, Mat44f aPreTransform ) {
 		tex.emplace_back( Vec2f{ 0.f, 1.f} );
 	}
 	printf("\nCube:\n");
-	printf("pos.positions.size() = %d\n", pos.size());
-	printf("tex.positions.size() = %d\n", tex.size());
+	printf("pos.positions.size() = %ld\n", pos.size());
+	printf("tex.positions.size() = %ld\n", tex.size());
 
 	for( auto& n : norm ) {
 		//Vec4f p4{ n.x, n.y, n.z, 1.f };
@@ -265,9 +253,57 @@ SimpleMeshData make_cube(Vec3f aColor, Mat44f aPreTransform ) {
 		p = Vec3f{ t.x, t.y, t.z };
 	}
 	std::vector col( pos.size(), aColor );
-	return SimpleMeshData{ std::move(pos), std::move(col), std::move(norm), std::move(tex) };
+	return SimpleMeshData{ std::move(pos), std::move(norm), std::move(tex) };
 }
+/*
+SimpleMeshData make_roof(Vec3f aColor, Mat44f aPreTransform ) {
+	std::vector<Vec3f> pos;
+	std::vector<Vec3f> norm;
+	std::vector<Vec2f> tex;
+	Mat33f const N = mat44_to_mat33( transpose(invert(aPreTransform)) );
 
+	int originSize = sizeof(kCubePositions)/sizeof(kCubePositions[0]);
+
+	for (int i = 0; i < originSize; i+=3) {
+		pos.emplace_back( Vec3f{ 1, 0, 1 } );
+		pos.emplace_back( Vec3f{ -1, 0, 1 } );
+		pos.emplace_back( Vec3f{ 0, 1, 0 } );
+
+		pos.emplace_back( Vec3f{ 1, 0, 1 } );
+		pos.emplace_back( Vec3f{ 1, 0, -1 } );
+		pos.emplace_back( Vec3f{ 0, 1, 0 } );
+		
+		//norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
+	}
+
+	for (int i = 0; i < 6; i++) {
+		tex.emplace_back( Vec2f{ 0.f, 0.f} );
+		tex.emplace_back( Vec2f{ 1.f, 0.f} );
+		tex.emplace_back( Vec2f{ 1.f, 1.f} );
+
+		tex.emplace_back( Vec2f{ 0.f, 0.f} );
+		tex.emplace_back( Vec2f{ 1.f, 1.f} );
+		tex.emplace_back( Vec2f{ 0.f, 1.f} );
+	}
+	printf("\nCube:\n");
+	printf("pos.positions.size() = %ld\n", pos.size());
+	printf("tex.positions.size() = %ld\n", tex.size());
+
+	for( auto& n : norm ) {
+		Vec3f t = N * n;
+		n = t;
+	}
+
+	for( auto& p : pos ) {
+		Vec4f p4{ p.x, p.y, p.z, 1.f };
+		Vec4f t = aPreTransform * p4;
+		t /= t.w;
+		p = Vec3f{ t.x, t.y, t.z };
+	}
+	std::vector col( pos.size(), aColor );
+	return SimpleMeshData{ std::move(pos), std::move(norm), std::move(tex) };
+}
+*/
 
 SimpleMeshData make_door(Vec3f aColor, Mat44f aPreTransform ) {
 	std::vector<Vec3f> pos;
@@ -293,6 +329,5 @@ SimpleMeshData make_door(Vec3f aColor, Mat44f aPreTransform ) {
 		t /= t.w;
 		p = Vec3f{ t.x, t.y, t.z };
 	}
-	std::vector col( pos.size(), aColor );
-	return SimpleMeshData{ std::move(pos), std::move(col), std::move(norm) };
+	return SimpleMeshData{ std::move(pos), std::move(norm) };
 }

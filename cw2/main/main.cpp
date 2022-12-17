@@ -71,7 +71,8 @@ namespace
 	struct Material {
 		Vec3f ambient;
 		Vec3f diffuse;
-		Vec3f specular;    
+		Vec3f specular;
+		Vec3f emissive;   
 		float shininess;
 	}; 
 
@@ -181,7 +182,10 @@ int main() try
 	glEnable(GL_FRAMEBUFFER_SRGB);
 	//glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
-	glClearColor(0.2f, 0.2f, 0.2f, 0.0f);
+	//glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glClearColor(0.f, 0.f, 0.1f, 0.0f);
+
 
 	OGL_CHECKPOINT_ALWAYS();
 
@@ -210,7 +214,7 @@ int main() try
 	
 	// TODO: 
 
-/*
+	/*
 	std::vector<SimpleMeshData> besties;
 	auto bestie = load_simple_binary_mesh( "assets/Armadillo.comp3811bin" );
 	auto bestieIndex = load_simple_binary_mesh_index( "assets/Armadillo.comp3811bin" );
@@ -239,15 +243,47 @@ int main() try
 	printf("pillar =(%ld)", pillar.positions.size());
 	int vertexCount = bestie.positions.size() *friends * friends + floor.positions.size() +pillar.positions.size() * rows*2;*/
 
+	/*
+	Vec3f ambient;
+	Vec3f diffuse;
+	Vec3f specular;
+	Vec3f emissive;   
+	float shininess;
+	*/
 	//Random guess
 	Material stone = {
 		Vec3f{.01f, .01f, .01f},
 		Vec3f{.4f, .4f, .4f},
 		Vec3f{0.f, 0.f, 0.f},
+		Vec3f{0.0f, 0.05f, 0.05f},
 		.4f
 	};
 	Material vantaBlack = {
 		Vec3f{0.f, 0.f, 0.f},
+		Vec3f{0.f, 0.f, 0.f},
+		Vec3f{0.f, 0.f, 0.f},
+		Vec3f{0.0f, 0.0f, 0.0f},
+		.4f
+	};
+
+	//For coursework objective
+	Material uranium = {
+		Vec3f{.01f, .01f, .01f},
+		Vec3f{0.f, 0.f, 0.f},
+		Vec3f{0.f, 0.f, 0.f},
+		Vec3f{1.f, .5f, 0.3f},
+		.4f
+	};
+	Material shinyShiny = {
+		Vec3f{.01f, .01f, .01f},
+		Vec3f{0.5f, 0.5f, 0.f},
+		Vec3f{1.f, 1.f, 0.f},
+		Vec3f{0.f, 0.f, 0.f},
+		.4f
+	};
+	Material noPun = {
+		Vec3f{.01f, .01f, .01f},
+		Vec3f{1.f, 1.f, 0.f},
 		Vec3f{0.f, 0.f, 0.f},
 		Vec3f{0.f, 0.f, 0.f},
 		.4f
@@ -257,7 +293,24 @@ int main() try
 		Vec3f{0.329412f, 0.223529f, 0.027451f},
 		Vec3f{0.780392f, 0.568627f, 0.113725f},
 		Vec3f{0.992157f, 0.941176f, 0.807843f},
+		Vec3f{0.05f, 0.05f, 0.05f}, //Most objects don't emit light
 		0.21794872f
+	};
+	//From MTL files:
+	Material cushion = {
+		Vec3f{0.f, 0.f, 0.f},
+		Vec3f{0.203922f, 0.305882f, 0.556863f},
+		Vec3f{0.009961f, 0.009961f, 0.009961f},
+		Vec3f{0.f, 0.f, 0.f},
+		.4f
+	};
+
+	Material wood = {
+		Vec3f{0.f, 0.f, 0.f},
+		Vec3f{0.356863f, 0.223529f, 0.019608f},
+		Vec3f{0.009961f, 0.009961, 0.009961f},
+		Vec3f{0.f, 0.f, 0.f},
+		.4f
 	};
 
 	unsigned int ourSaviour = loadTexture("assets/markus.png");
@@ -268,23 +321,25 @@ int main() try
 
 	std::vector<SimpleMeshData> chapel;
 
-	auto floor = make_cube( Vec3f{0.5f, 0.5f, 0.5f}, make_scaling( 200.f, 2.f, 200.f ) * make_translation( { 0.f, -1.f, 0.f }));
+	auto floor = make_cube( Vec3f{0.07f, 0.07f, 0.07f}, make_scaling( 200.f, 2.f, 200.f ) * make_translation( { 0.f, -1.f, 0.f }));
 	chapel.emplace_back(floor);
 
 	//auto frontWall = make_cube( Vec3f{1, 1, 1}, make_scaling( 5.f, 10.f, 0.5f ) * make_translation( { 3.5f, 5.f, 2.25f }));
-	auto frontWall = make_cube( Vec3f{.2f, .2f, .2f}, make_scaling( 10.f, 15.f, 0.5f )); //so 10 meter
+	auto frontWall = make_cube( Vec3f{.02f, .02f, .02f}, make_scaling( 13.f, 15.f, 1.f )); //so 10 meter
 	int wallBits = 2;
 	for (float i = 0; i < wallBits; i++)
-		chapel.emplace_back(make_change(frontWall, make_translation( { 14.f - 28.f*i, 15.f, 5.f }) ));
+		chapel.emplace_back(make_change(frontWall, make_translation( { 17.f - 34.f*i, 15.f, 5.f }) ));
 
 
-	auto sideWall = make_cube( Vec3f{1, 1, 1}, make_scaling( .5f, 15.f, 24.f ));//so 48 meter
+	auto sideWall = make_cube( Vec3f{.02f, .02f, .02f}, make_scaling( 1.f, 15.f, 24.f ));//so 48 meter
 	int sideWallBits = 2;
 	for (float i = 0; i < sideWallBits; i++)
-		chapel.emplace_back(make_change(sideWall, make_translation( { 23.5f - 47.f*i, 15.f, 29.5f }) ));
+		chapel.emplace_back(make_change(sideWall, make_translation( { 29.f - 58.f*i, 15.f, 30.f }) ));
 
 
-	auto pillar = make_cylinder( true, 18, {1, 0, 1}, make_scaling( .75f, 10.f, .75f ) * make_rotation_z( 3.141592f / 2.f ));
+	auto pillar = make_cylinder( true, 18, {.1f, 0, .1f}, make_scaling( .75f, 10.f, .75f ) * make_rotation_z( 3.141592f / 2.f ));
+	auto lamp = make_cylinder( true, 18, {.1f, .1f, .1f}, make_scaling( .1f, 5.f, .1f ) * make_rotation_z( 3.141592f / 2.f ));
+	//lamp = invert_normals(lamp);
 	struct PointLight {
 			Vec3f position;
 			float constant;
@@ -296,62 +351,81 @@ int main() try
 	};
 	std::vector<PointLight> PointLightData;
 	int rows = 3;
+	int lampCount = 6;
 	for (float i = 0; i < rows; i++)
 		for (float l = 0; l < 2; l++) {
 			chapel.emplace_back(make_change(pillar, make_translation( { 5.f - 10.f*l, 0.f, 15.f + 15.f * i }) ));
 			//chapel.emplace_back(make_cylinder( true, 18, Vec3f{1, 0, 1}, make_translation( { 22.f - 44.f*i, 0.f, 29.f })));
 		
 			PointLight p1;
-			p1.position = Vec3f{ 4.f - 8.f*l, 4.f, 15.f + 15.f * i };
+			p1.position = Vec3f{ 3.f - 6.f*l, 4.f, 15.f + 15.f * i };
 			p1.constant = 1.f;
 			p1.linear = 0.3f;
-			p1.quadratic = 0.32f;
-			p1.ambient = Vec3f{ 0.f, 0.f, 1.f };
-			p1.diffuse = Vec3f{ 0.f, 1.f, 1.f };
-			p1.specular = Vec3f{ 1.f, 0.f, 0.f };
+			p1.quadratic = 0.032f;
+			p1.ambient = Vec3f{ .5f, .15f, .05f };
+			p1.diffuse = Vec3f{ .5f, .4f, .05f };
+			p1.specular = Vec3f{ .5f, .4f, .05f };
 			PointLightData.emplace_back(p1);
+			chapel.emplace_back(make_change(lamp, make_translation( { 3.f - 6.f*l, 4.f, 17.f + 15.f * i }) ));
 		}
-	
+
 	/*
-	//left side
-	auto backSwall = make_cube( Vec3f{1, 1, 1}, make_rotation_y( -3.141592f / 4.f) * make_scaling( .5f, 20.f, 13.f ));
-	chapel.emplace_back(make_change(backSwall, make_translation( { 23.5f, 0.f, 80.5f }) ));
-	//right side
-	auto backSwallb = make_cube( Vec3f{1, 1, 1}, make_rotation_y( 3.141592f / 4.f ) * make_scaling( .5f, 20.f, 13.f ));
-	chapel.emplace_back(make_change(backSwallb, make_translation( { -23.5f, 0.f, 80.5f }) ));
-	//Back Side
-	auto backSwallc = make_cube( Vec3f{1, 1, 1}, make_rotation_y( 3.141592f / 2.f ) * make_scaling( .5f, 20.f, 14.5f ));//so 48 meter
-	chapel.emplace_back(make_change(backSwallc, make_translation( { 0.f, 0.f, 89.3f }) ));
-	int backSwallBits = 3;*/
+	unsigned int transparentVAO, transparentVBO;
+    glGenVertexArrays(1, &transparentVAO);
+    glGenBuffers(1, &transparentVBO);
+    glBindVertexArray(transparentVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, transparentVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(transparentVertices), transparentVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glBindVertexArray(0);*/
 
 
-	auto picture = make_cube( Vec3f{0.5f, 0.5f, 0.5f}, make_rotation_z( -3.141592f / 2.f ) * make_rotation_y( 3.141592f / 2.f ) * make_scaling( .1f, 6.f, 7.62f ));//so 48 meter
-	//chapel.emplace_back(make_change(picture, make_translation( { 0.f, 5.f, 88.8f }) ));
+	auto picture = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_rotation_z( -3.141592f / 2.f ) * make_rotation_y( 3.141592f / 2.f ) * make_scaling( .1f, 6.f, 7.62f ));//so 48 meter
 	chapel.emplace_back(make_change(picture, make_translation( { 0.f, 9.f, 108.8f }) ));
 	int pictures = 1;
 
-	auto backroom = make_partial_cylinder( true, 6, {1, 0, 1},  make_rotation_y( -3.141592f / 3.f )* make_rotation_z( 3.141592f / 2.f ));
+	auto backroom = make_partial_building( true, 6, 1, {.02f, .02f, .02f},  make_rotation_y( -3.141592f / 3.f )* make_rotation_z( 3.141592f / 2.f ));
 	chapel.emplace_back(make_change(backroom, make_translation( { 0.f, 0.f, 86.8f })*  make_scaling( 60.f, 40.f, 40.f ) ));
 	//chapel.emplace_back(backroom);
 	int backrooms = 1;
 
-	//auto celticCross = load_wavefront_obj( "assets/Armadillo.obj" );
-	//printf("celticCross ", celticCross.positions.size());
-	auto celticCross = make_partial_cylinder( true, 6, {1, 0, 1},  make_rotation_y( -3.141592f / 3.f )* make_rotation_z( 3.141592f / 2.f ));
-	chapel.emplace_back(celticCross);
-	int crossCount = 1;
 
-	//auto door = make_cube( Vec3f{1, 1, 1}, make_scaling( 1.f, 1.f, 1.f ));
-	//int sideWallBits = 2;
-	//for (float i = 0; i < sideWallBits; i++)
-		//chapel.emplace_back(make_cube( Vec3f{0, 1, 1}, make_translation( { 3.5f - 7.f*i, 0.f, 5.f }) * make_scaling( 5.f, 10.f, 0.5f )));
-	//chapel.emplace_back(door);
+	std::vector<SimpleMeshData> parts;
+	auto benches = load_wavefront_obj( "assets/chair-y-good-obj/chair-y-good.obj" );
+	auto benchShapes = getDimensions( "assets/chair-y-good-obj/chair-y-good.obj" );
+	benches = make_change(benches, make_scaling( 5.f, 1.f, 1.f ) );
+	benches = make_change(benches, make_rotation_y( 3.141592f ) );
+	benches = make_change(benches, make_translation( {-8.f, 0.f, 15.f }) );
+	int benchCount = 12;
+	//printf("benches ", benches.positions.size());
+	for (float i = 0; i < 6; i++)
+		for (float l = 0; l < 2; l++)
+			chapel.emplace_back(make_change(benches, make_translation( {29.f * l, 0.f, i*6.f }) ));
+
+	
+
+	auto roof = make_partial_cylinder( true, 16, 8, {.02f, .02f, .02f},  make_scaling( 1.f, 1.f, 1.f ));
+	roof = make_change(roof, make_rotation_x( -3.141592f / 2.f )* make_rotation_z( 3.141592f / 2.f ) );
+	roof = make_change(roof, make_scaling( 27.f, 20.f, 50.f ) );
+	roof = make_change(roof, make_translation( {0.f, 30.f, 55.f }) );
+	chapel.emplace_back(roof);
+	int roofCount = 1;
+
+	auto plutonium = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_scaling( 2.f, 2.f, 2.f ));//so 48 meter
+	chapel.emplace_back(plutonium);
+	int plutoniumCount = 1;
 
 
 	int vertexCount = floor.positions.size() + frontWall.positions.size() * wallBits + sideWall.positions.size() * sideWallBits 
 	+ pillar.positions.size() * rows*2;
 	float sunXloc = -1.f;
-	GLuint vao = create_vaoM(&chapel[0], 1 + wallBits + sideWallBits + rows*2 + pictures + backrooms + crossCount);
+	printf("\nNINJA\n");
+	GLuint vao = create_vaoM(&chapel[0], 1 + wallBits + sideWallBits + rows*2 + lampCount + pictures + backrooms + benchCount + roofCount + plutoniumCount);
+	printf("\nNINJA2\n");
+
 
 	OGL_CHECKPOINT_ALWAYS();
 
@@ -463,6 +537,8 @@ int main() try
 
 		Vec3f lightPos = Vec3f{ 0.f, 1.f, 0.f };
 
+		
+
 
 	
 		// Draw scene
@@ -475,12 +551,13 @@ int main() try
 
 
 		glUniform1i(glGetUniformLocation(prog.programId(), "texture.diffuse"), 0); //lightDir uLightDir
-		glUniform1i(glGetUniformLocation(prog.programId(), "texture.specular"), 1); //lightDir uLightDir
+		glUniform1i(glGetUniformLocation(prog.programId(), "texture.specular"), 0); //lightDir uLightDir
 
 
 		glUniform3fv(glGetUniformLocation(prog.programId(), "uLightDir"), 1, &lightDir.x ); //lightDir uLightDir
 		glUniform3f( glGetUniformLocation(prog.programId(), "uLightDiffuse"), .6f, .6f, .6f ); //lightDiffuse
-		glUniform3f( glGetUniformLocation(prog.programId(), "uSceneAmbient"), 0.05f, 0.05f, 0.05f ); //uSceneAmbient
+		glUniform3f( glGetUniformLocation(prog.programId(), "uSceneAmbient"), 0.1f, 0.1f, 0.1f ); //uSceneAmbient
+		//printf("normalMatrix: (%f, %f, %f)\n", state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z);
 		glUniform3f( glGetUniformLocation(prog.programId(), "viewPos"), state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z ); //uSceneAmbient
 
 		
@@ -512,7 +589,7 @@ int main() try
 		glBindVertexArray( vao );
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, ourVoid);
+        glBindTexture(GL_TEXTURE_2D, NULL);
 /*
 		glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &vantaBlack.ambient.x );
 		glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &vantaBlack.diffuse.x );
@@ -523,7 +600,8 @@ int main() try
 		glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &stone.ambient.x );
 		glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &stone.diffuse.x );
 		glUniform3fv(glGetUniformLocation(prog.programId(), "material.specular"), 1, &stone.specular.x );
-		glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"),stone.shininess);
+		glUniform3fv(glGetUniformLocation(prog.programId(), "material.emissive"), 1, &vantaBlack.emissive.x );
+		glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"), stone.shininess);
 		int counter = floor.positions.size();
 		glDrawArrays( GL_TRIANGLES, 0, counter);
 		
@@ -543,6 +621,10 @@ int main() try
 		glDrawArrays( GL_TRIANGLES, 0, counter);
 
 
+		counter += lamp.positions.size() * lampCount;
+		glDrawArrays( GL_TRIANGLES, 0, counter);
+
+
 		//counter += door.positions.size();
 		//glDrawArrays( GL_TRIANGLES, 0, counter);
 
@@ -550,35 +632,97 @@ int main() try
 		//glDrawArrays( GL_TRIANGLES, 0, counter);
 
 
-		glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &vantaBlack.ambient.x );
-		glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &vantaBlack.diffuse.x );
-		glUniform3fv(glGetUniformLocation(prog.programId(), "material.specular"), 1, &vantaBlack.specular.x );
-		glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"), stone.shininess);
-
 		glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &stone.ambient.x );
 		glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &stone.diffuse.x );
 		glUniform3fv(glGetUniformLocation(prog.programId(), "material.specular"), 1, &stone.specular.x );
-		glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"),stone.shininess);
-
+		glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"), stone.shininess);
 		
 
 		glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, ourSaviour);
-		counter += picture.positions.size()*pictures;
+		counter += picture.positions.size();
 		glDrawArrays( GL_TRIANGLES, 0, counter);
 
 
 
 
 		glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, ourVoid);
+        glBindTexture(GL_TEXTURE_2D, NULL);
 		counter += backroom.positions.size()*backrooms;
 		glDrawArrays( GL_TRIANGLES, 0, counter);
 
+		
 
-		counter += celticCross.positions.size()*crossCount;
+		glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, ourVoid);
+		//counter += benches.positions.size()*benchCount;
+		//glDrawArrays( GL_TRIANGLES, 0, counter);
+		//printf("\nbencSize = %ld", benches.positions.size());
+		int bCoun = 0;
+		for (int l = 0; l < benchShapes.size(); l++) {
+			bCoun += benchShapes[l];
+		}
+		//printf("\nbCoun = %d", bCoun);
+
+
+		for (int i = 0; i < benchCount; i++) {
+			glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &cushion.ambient.x );
+			glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &cushion.diffuse.x );
+			glUniform3fv(glGetUniformLocation(prog.programId(), "material.specular"), 1, &cushion.specular.x );
+			glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"), cushion.shininess);
+			counter += benchShapes[0];
+			glDrawArrays( GL_TRIANGLES, 0, counter);
+
+			glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &wood.ambient.x );
+			glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &wood.diffuse.x );
+			glUniform3fv(glGetUniformLocation(prog.programId(), "material.specular"), 1, &wood.specular.x );
+			glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"), wood.shininess);
+			counter += benchShapes[1];
+			glDrawArrays( GL_TRIANGLES, 0, counter);
+			counter += benchShapes[2];
+			glDrawArrays( GL_TRIANGLES, 0, counter);
+
+			glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &cushion.ambient.x );
+			glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &cushion.diffuse.x );
+			glUniform3fv(glGetUniformLocation(prog.programId(), "material.specular"), 1, &cushion.specular.x );
+			glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"), cushion.shininess);
+			counter += benchShapes[3];
+			glDrawArrays( GL_TRIANGLES, 0, counter);
+
+
+			glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &wood.ambient.x );
+			glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &wood.diffuse.x );
+			glUniform3fv(glGetUniformLocation(prog.programId(), "material.specular"), 1, &wood.specular.x );
+			glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"), wood.shininess);
+
+			for (int l = 4; l < benchShapes.size()-2; l++) {
+				counter += benchShapes[l];
+				glDrawArrays( GL_TRIANGLES, 0, counter);
+			}
+			glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &wood.ambient.x );
+			glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &wood.diffuse.x );
+			glUniform3fv(glGetUniformLocation(prog.programId(), "material.specular"), 1, &wood.specular.x );
+			glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"), wood.shininess);
+			counter += benchShapes[6];
+			glDrawArrays( GL_TRIANGLES, 0, counter);
+			counter += benchShapes[7];
+			glDrawArrays( GL_TRIANGLES, 0, counter);
+
+
+		}
+		
+		counter += roof.positions.size() * roofCount;
 		glDrawArrays( GL_TRIANGLES, 0, counter);
 
+
+		glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &uranium.ambient.x );
+		glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &uranium.diffuse.x );
+		glUniform3fv(glGetUniformLocation(prog.programId(), "material.specular"), 1, &uranium.specular.x );
+		glUniform3fv(glGetUniformLocation(prog.programId(), "material.emissive"), 1, &uranium.emissive.x );
+		glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"), uranium.shininess);
+
+		counter += plutonium.positions.size() * plutoniumCount;
+		glDrawArrays( GL_TRIANGLES, 0, counter);
 
 		//glDrawElements( GL_TRIANGLES, vertexCount, GL_UNSIGNED_INT, NULL);
 		//glDrawElements( GL_TRIANGLES, vertexCount, GL_UNSIGNED_BYTE, NULL);

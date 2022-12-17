@@ -6,9 +6,8 @@
 // https://www.khronos.org/opengl/wiki/Layout Qualifier (GLSL)5G// for more information.
 // Note: the indices that we specify here must match the ones that we set up in the vertex array object.
 layout( location = 0 ) in vec3 iPosition;
-layout( location = 1 ) in vec3 iColor;
-layout( location = 2 ) in vec3 iNormal;
-layout( location = 3 ) in vec2 iTexCoords;
+layout( location = 1 ) in vec3 iNormal;
+layout( location = 2 ) in vec2 iTexCoords;
 
 uniform mat4 uProjCameraWorld;
 uniform mat3 uNormalMatrix;
@@ -16,7 +15,6 @@ uniform mat4 transformation;
 
 //layout( location = 5 ) uniform vec3 uLightPos;
 
-out vec3 v2fColor; // v2f = vertex to fragment
 out vec3 v2fNormal;
 out vec2 v2fTexCoords;
 //out float lightDistance;
@@ -27,7 +25,6 @@ void main() {
 	vec3 tPosition = vec3( t.x, t.y, t.z );
     //vec3 tPosition = iPosition * transformation;
 
-    v2fColor = iColor;
     v2fTexCoords = iTexCoords;
 
 
