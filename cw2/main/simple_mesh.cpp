@@ -120,6 +120,7 @@ GLuint create_vaoM( SimpleMeshData * aMeshData , int number) {
 			pSize += aMeshData[i].positions.size()* sizeof(Vec3f);
 			//printf("posit");
 		}
+		printf("\n\npmax = %d\n", pMax);
 		//printf("posdone");
 
 		//Color
@@ -151,7 +152,7 @@ GLuint create_vaoM( SimpleMeshData * aMeshData , int number) {
 			nSize += aMeshData[i].normals.size()* sizeof(Vec3f);
 		}
 
-		//index
+		//textures
 		glGenBuffers( 1, &textureVBO );
 		glBindBuffer( GL_ARRAY_BUFFER, textureVBO );
 
@@ -159,11 +160,12 @@ GLuint create_vaoM( SimpleMeshData * aMeshData , int number) {
 		for (int i = 0; i < c; i++) {
 			tMax += aMeshData[i].texCoords.size()* sizeof(Vec2f);
 		}
+		printf("tex = %d", tMax);
 		glBufferData(GL_ARRAY_BUFFER, tMax, 0, GL_STATIC_DRAW);
 		int tSize = 0;
 		for (int i = 0; i < c; i++) {
 			glBufferSubData(GL_ARRAY_BUFFER, tSize, aMeshData[i].texCoords.size()*sizeof(Vec2f), aMeshData[i].texCoords.data());
-			tSize += aMeshData[i].indices.size()*sizeof(Vec2f);
+			tSize += aMeshData[i].texCoords.size()*sizeof(Vec2f);
 		}
 
 
@@ -235,7 +237,7 @@ SimpleMeshData make_cube(Vec3f aColor, Mat44f aPreTransform ) {
 		//norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
 	}
 
-	for (int i = 0; i < originSize; i+=3) {
+	for (int i = 0; i < 6; i++) {
 		tex.emplace_back( Vec2f{ 0.f, 0.f} );
 		tex.emplace_back( Vec2f{ 1.f, 0.f} );
 		tex.emplace_back( Vec2f{ 1.f, 1.f} );
@@ -244,6 +246,9 @@ SimpleMeshData make_cube(Vec3f aColor, Mat44f aPreTransform ) {
 		tex.emplace_back( Vec2f{ 1.f, 1.f} );
 		tex.emplace_back( Vec2f{ 0.f, 1.f} );
 	}
+	printf("\nCube:\n");
+	printf("pos.positions.size() = %d\n", pos.size());
+	printf("tex.positions.size() = %d\n", tex.size());
 
 	for( auto& n : norm ) {
 		//Vec4f p4{ n.x, n.y, n.z, 1.f };

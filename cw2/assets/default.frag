@@ -68,9 +68,9 @@ void main() {
 
 
     //vec3 result = (uSceneAmbient*material.ambient + nDotL * uLightDiffuse * material.diffuse) * v2fColor;
-    vec3 result = uSceneAmbient * ( material.ambient + vec3(texture(textures.diffuse, v2fTexCoords)));//Ambient
-    result += nDotL * uLightDiffuse * (material.diffuse + vec3(texture(textures.diffuse, v2fTexCoords)));
-    result += specular * (spec * material.specular + vec3(texture(textures.specular, v2fTexCoords)));
+    vec3 result = uSceneAmbient * (material.ambient + vec3(texture(textures.diffuse, v2fTexCoords)));//Ambient
+    result += nDotL * uLightDiffuse * (material.diffuse + vec3(texture(textures.diffuse, v2fTexCoords)));//diffuse
+    result += specular * (spec * material.specular + vec3(texture(textures.specular, v2fTexCoords)));//specular
     result *= v2fColor;
 
     // phase 2: point lights

@@ -26,9 +26,9 @@ SimpleMeshData make_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f aColor, 
 		norm.emplace_back( Vec3f{ 0.f, y, z } );
 		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
 
-		tex.emplace_back( Vec2f{ 0.f, (float)(i)/16} );
-		tex.emplace_back( Vec2f{ 0.f, (float)(i+1)/16} );
-		tex.emplace_back( Vec2f{ 1.f, (float)(i)/16} );
+		tex.emplace_back( Vec2f{ 0.f, (float)((i)/16.f)} );
+		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/16.f)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i)/16.f)} );
 
 
 
@@ -40,13 +40,9 @@ SimpleMeshData make_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f aColor, 
 		norm.emplace_back( Vec3f{ 0.f, y, z } );
 		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
 
-		tex.emplace_back( Vec2f{ 1.f, 0.f} );
-		tex.emplace_back( Vec2f{ 1.f, 0.f} );
-		tex.emplace_back( Vec2f{ 0.f, 0.f} );
-
-		tex.emplace_back( Vec2f{ 0.f, (float)(i+1)/16} );
-		tex.emplace_back( Vec2f{ 1.f, (float)(i+1)/16} );
-		tex.emplace_back( Vec2f{ 1.f, (float)(i)/16} );
+		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/16.f)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/16.f)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i)/16.f)} );
 
 
 		if (aCapped) {
@@ -58,9 +54,9 @@ SimpleMeshData make_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f aColor, 
 			norm.emplace_back( Vec3f{ -1.f, 0, 0 } );
 			norm.emplace_back( Vec3f{ -1.f, 0, 0 } );
 
-			tex.emplace_back( Vec2f{ 0.f, (float)(i+1)/16} );
+			tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/16.f)} );
 			tex.emplace_back( Vec2f{ 0.f, 0.f} );
-			tex.emplace_back( Vec2f{ 0.f, (float)(i)/16} );
+			tex.emplace_back( Vec2f{ 0.f, (float)((i)/16.f)} );
 
 
 
@@ -72,14 +68,16 @@ SimpleMeshData make_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f aColor, 
 			norm.emplace_back( Vec3f{ 1.f, 0, 0 } );
 			norm.emplace_back( Vec3f{ 1.f, 0, 0 } );
 
-			tex.emplace_back( Vec2f{ 1.f, (float)(i+1)/16} );
+			tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/16.f)} );
 			tex.emplace_back( Vec2f{ 1.f, 0.f} );
-			tex.emplace_back( Vec2f{ 1.f, (float)(i)/16} );
+			tex.emplace_back( Vec2f{ 1.f, (float)((i)/16.f)});
 		}
 
 		prevY = y;
 		prevZ = z;
 	}
+	printf("pos.positions.size() = %d\n", pos.size());
+	printf("tex.positions.size() = %d", tex.size());
 	//Vec3f operator*( Mat33f const& aLeft, Vec3f const& aRight )
 	/**/
 	for( auto& n : norm ) {
@@ -101,6 +99,126 @@ SimpleMeshData make_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f aColor, 
 	return SimpleMeshData{ std::move(pos), std::move(col), std::move(norm), std::move(tex) };
 
 }
+
+SimpleMeshData make_partial_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f aColor, Mat44f aPreTransform ) {
+	std::vector<Vec3f> pos;
+	std::vector<Vec3f> norm;
+	std::vector<Vec2f> tex;
+	Mat33f const N = mat44_to_mat33( transpose(invert(aPreTransform)) );
+
+	float prevY = std::cos( 0.f );
+	float prevZ = std::sin( 0.f );
+
+	for( std::size_t i = 0; i < aSubdivs-1; ++i ) {
+		float const angle = (i+1) / float(aSubdivs) * 2.f * 3.1415926f;
+
+		float y = std::cos( angle );
+		float z = std::sin( angle );
+
+		// Two triangles (= 3*2 positions) create one segment of the cylinder’s shell.
+		//interior
+		pos.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
+		pos.emplace_back( Vec3f{ 0.f, y, z } );
+		pos.emplace_back( Vec3f{ 1.f, prevY, prevZ } );
+
+		norm.emplace_back( Vec3f{ 0.f, 1-prevY, 1-prevZ } );
+		norm.emplace_back( Vec3f{ 0.f, 1-y, 1-z } );
+		norm.emplace_back( Vec3f{ 0.f, 1-prevY, 1-prevZ } );
+
+		tex.emplace_back( Vec2f{ 0.f, (float)((i)/16.f)} );
+		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/16.f)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i)/16.f)} );
+
+
+		pos.emplace_back( Vec3f{ 0.f, y, z } );
+		pos.emplace_back( Vec3f{ 1.f, y, z } );
+		pos.emplace_back( Vec3f{ 1.f, prevY, prevZ } );
+
+		norm.emplace_back( Vec3f{ 0.f, 1-y, 1-z } );
+		norm.emplace_back( Vec3f{ 0.f, 1-y, 1-z } );
+		norm.emplace_back( Vec3f{ 0.f, 1-prevY, 1-prevZ } );
+
+		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/16.f)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/16.f)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i)/16.f)} );
+
+
+		// Two triangles (= 3*2 positions) create one segment of the cylinder’s shell.
+		//exterior
+		pos.emplace_back( Vec3f{ 0.f, prevY*1.1, prevZ*1.1 } );
+		pos.emplace_back( Vec3f{ 0.f, y*1.1, z*1.1 } );
+		pos.emplace_back( Vec3f{ 1.f, prevY*1.1, prevZ*1.1 } );
+
+		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
+		norm.emplace_back( Vec3f{ 0.f, y, z } );
+		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
+
+		tex.emplace_back( Vec2f{ 0.f, (float)((i)/16.f)} );
+		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/16.f)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i)/16.f)} );
+
+
+		pos.emplace_back( Vec3f{ 0.f, y*1.1, z*1.1 } );
+		pos.emplace_back( Vec3f{ 1.f, y*1.1, z*1.1 } );
+		pos.emplace_back( Vec3f{ 1.f, prevY*1.1, prevZ*1.1 } );
+
+		norm.emplace_back( Vec3f{ 0.f, y, z } );
+		norm.emplace_back( Vec3f{ 0.f, y, z } );
+		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
+
+		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/16.f)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/16.f)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i)/16.f)} );
+
+
+		if (aCapped) {
+			//interior
+			pos.emplace_back( Vec3f{ 1.f, y, z } );
+			pos.emplace_back( Vec3f{ 2.f, 0, 0 } );
+			pos.emplace_back( Vec3f{ 1.f, prevY, prevZ } );
+
+			norm.emplace_back( Vec3f{ 1.f, 1-y, 1-z } );
+			norm.emplace_back( Vec3f{ 1.f, 0, 0 } );
+			norm.emplace_back( Vec3f{ 1.f, 1-prevY, 1-prevZ } );
+
+			tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/16.f)} );
+			tex.emplace_back( Vec2f{ 1.f, 0.f} );
+			tex.emplace_back( Vec2f{ 1.f, (float)((i)/16.f)});
+
+			//exterior
+			pos.emplace_back( Vec3f{ 1.f, y*1.1, z*1.1 } );
+			pos.emplace_back( Vec3f{ 2.f*1.1, 0, 0 } );
+			pos.emplace_back( Vec3f{ 1.f, prevY*1.1, prevZ*1.1 } );
+
+			norm.emplace_back( Vec3f{ 1.f, y*1.1, z*1.1  } );
+			norm.emplace_back( Vec3f{ 2.f*1.1, 0, 0 } );
+			norm.emplace_back( Vec3f{ 1.f, prevY*1.1, prevZ*1.1 } );
+
+			tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/16.f)} );
+			tex.emplace_back( Vec2f{ 1.f, 0.f} );
+			tex.emplace_back( Vec2f{ 1.f, (float)((i)/16.f)});
+		}
+
+		prevY = y;
+		prevZ = z;
+	}
+	printf("pos.positions.size() = %d\n", pos.size());
+	printf("tex.positions.size() = %d", tex.size());
+	for( auto& n : norm ) {
+		Vec3f t = N * n;
+		n = t;
+	}
+
+	for( auto& p : pos ) {
+		Vec4f p4{ p.x, p.y, p.z, 1.f };
+		Vec4f t = aPreTransform * p4;
+		t /= t.w;
+		p = Vec3f{ t.x, t.y, t.z };
+	}
+	std::vector col( pos.size(), aColor );
+	return SimpleMeshData{ std::move(pos), std::move(col), std::move(norm), std::move(tex) };
+}
+
 
 SimpleMeshData make_div_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f aColor, Mat44f aPreTransform , std::size_t lSubdivs) {
 	std::vector<Vec3f> pos;

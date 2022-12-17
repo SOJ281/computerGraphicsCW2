@@ -32,4 +32,6 @@ SimpleMeshData make_bent_cylinder(
 	std::size_t lSubdivs = 1
 );
 
+SimpleMeshData make_partial_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f aColor, Mat44f aPreTransform );
+
 #endif // CYLINDER_HPP_E4D1E8EC_6CDA_4800_ABDD_264F643AF5DB
