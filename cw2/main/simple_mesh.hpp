@@ -15,7 +15,6 @@
 struct SimpleMeshData
 {
 	std::vector<Vec3f> positions;
-	std::vector<Vec3f> colors;
 	std::vector<Vec3f> normals;
 	std::vector<Vec2f> texCoords;
 	std::vector<uint32_t> indices;
@@ -29,6 +28,7 @@ SimpleMeshData make_change( SimpleMeshData, Mat44f );
 GLuint create_vao( SimpleMeshData const& );
 GLuint create_vaoM( SimpleMeshData* , int number);
 SimpleMeshData make_cube(Vec3f aColor, Mat44f aPreTransform );
+SimpleMeshData invert_normals(SimpleMeshData aM) ;
 
 
 #endif // SIMPLE_MESH_HPP_C6B749D6_C83B_434C_9E58_F05FC27FEFC9

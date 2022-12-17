@@ -26,9 +26,9 @@ SimpleMeshData make_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f aColor, 
 		norm.emplace_back( Vec3f{ 0.f, y, z } );
 		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
 
-		tex.emplace_back( Vec2f{ 0.f, (float)((i)/16.f)} );
-		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/16.f)} );
-		tex.emplace_back( Vec2f{ 1.f, (float)((i)/16.f)} );
+		tex.emplace_back( Vec2f{ 0.f, (float)((i)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)} );
 
 
 
@@ -40,9 +40,9 @@ SimpleMeshData make_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f aColor, 
 		norm.emplace_back( Vec3f{ 0.f, y, z } );
 		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
 
-		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/16.f)} );
-		tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/16.f)} );
-		tex.emplace_back( Vec2f{ 1.f, (float)((i)/16.f)} );
+		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)} );
 
 
 		if (aCapped) {
@@ -54,9 +54,9 @@ SimpleMeshData make_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f aColor, 
 			norm.emplace_back( Vec3f{ -1.f, 0, 0 } );
 			norm.emplace_back( Vec3f{ -1.f, 0, 0 } );
 
-			tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/16.f)} );
+			tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/aSubdivs)} );
 			tex.emplace_back( Vec2f{ 0.f, 0.f} );
-			tex.emplace_back( Vec2f{ 0.f, (float)((i)/16.f)} );
+			tex.emplace_back( Vec2f{ 0.f, (float)((i)/aSubdivs)} );
 
 
 
@@ -68,16 +68,16 @@ SimpleMeshData make_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f aColor, 
 			norm.emplace_back( Vec3f{ 1.f, 0, 0 } );
 			norm.emplace_back( Vec3f{ 1.f, 0, 0 } );
 
-			tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/16.f)} );
+			tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/aSubdivs)} );
 			tex.emplace_back( Vec2f{ 1.f, 0.f} );
-			tex.emplace_back( Vec2f{ 1.f, (float)((i)/16.f)});
+			tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)});
 		}
 
 		prevY = y;
 		prevZ = z;
 	}
-	printf("pos.positions.size() = %d\n", pos.size());
-	printf("tex.positions.size() = %d", tex.size());
+	printf("pos.positions.size() = %ld\n", pos.size());
+	printf("tex.positions.size() = %ld", tex.size());
 	//Vec3f operator*( Mat33f const& aLeft, Vec3f const& aRight )
 	/**/
 	for( auto& n : norm ) {
@@ -96,54 +96,54 @@ SimpleMeshData make_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f aColor, 
 	}
 	std::vector col( pos.size(), aColor );
 	//for( std::size_t i = 0; i < aSubdivs; ++i ) {
-	return SimpleMeshData{ std::move(pos), std::move(col), std::move(norm), std::move(tex) };
+	return SimpleMeshData{ std::move(pos), std::move(norm), std::move(tex) };
 
 }
 
-SimpleMeshData make_partial_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f aColor, Mat44f aPreTransform ) {
+SimpleMeshData make_partial_building( bool aCapped, std::size_t aSubdivs, std::size_t cutOff, Vec3f aColor, Mat44f aPreTransform ) {
 	std::vector<Vec3f> pos;
 	std::vector<Vec3f> norm;
 	std::vector<Vec2f> tex;
+	printf("PARTIAL\n");
 	Mat33f const N = mat44_to_mat33( transpose(invert(aPreTransform)) );
 
 	float prevY = std::cosf( 0.f );
 	float prevZ = std::sinf( 0.f );
 
-	for( std::size_t i = 0; i < aSubdivs-1; ++i ) {
+	for( std::size_t i = 0; i < aSubdivs-cutOff; ++i ) {
 		float const angle = (i+1) / float(aSubdivs) * 2.f * 3.1415926f;
 
 		float y = std::cosf( angle );
 		float z = std::sinf( angle );
 
-		// Two triangles (= 3*2 positions) create one segment of the cylinder’s shell.
+		// 2x Two triangles (= 3*2 positions) create one segment of the cylinder’s shell.
 		//interior
 		pos.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
 		pos.emplace_back( Vec3f{ 0.f, y, z } );
 		pos.emplace_back( Vec3f{ 1.f, prevY, prevZ } );
 
-		norm.emplace_back( Vec3f{ 0.f, 1-prevY, 1-prevZ } );
-		norm.emplace_back( Vec3f{ 0.f, 1-y, 1-z } );
-		norm.emplace_back( Vec3f{ 0.f, 1-prevY, 1-prevZ } );
+		norm.emplace_back( Vec3f{ 0.f, 1.f-prevY, 1.f-prevZ } );
+		norm.emplace_back( Vec3f{ 0.f, 1.f-y, 1.f-z } );
+		norm.emplace_back( Vec3f{ 0.f, 1.f-prevY, 1.f-prevZ } );
 
-		tex.emplace_back( Vec2f{ 0.f, (float)((i)/16.f)} );
-		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/16.f)} );
-		tex.emplace_back( Vec2f{ 1.f, (float)((i)/16.f)} );
+		tex.emplace_back( Vec2f{ 0.f, (float)((i)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)} );
 
 
 		pos.emplace_back( Vec3f{ 0.f, y, z } );
 		pos.emplace_back( Vec3f{ 1.f, y, z } );
 		pos.emplace_back( Vec3f{ 1.f, prevY, prevZ } );
 
-		norm.emplace_back( Vec3f{ 0.f, 1-y, 1-z } );
-		norm.emplace_back( Vec3f{ 0.f, 1-y, 1-z } );
+		norm.emplace_back( Vec3f{ 0.f, 1.f-y, 1.f-z } );
+		norm.emplace_back( Vec3f{ 0.f, 1.f-y, 1.f-z } );
 		norm.emplace_back( Vec3f{ 0.f, 1-prevY, 1-prevZ } );
 
-		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/16.f)} );
-		tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/16.f)} );
-		tex.emplace_back( Vec2f{ 1.f, (float)((i)/16.f)} );
+		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)} );
 
 
-		// Two triangles (= 3*2 positions) create one segment of the cylinder’s shell.
 		//exterior
 		pos.emplace_back( Vec3f{ 0.f, prevY*1.1f, prevZ*1.1f } );
 		pos.emplace_back( Vec3f{ 0.f, y*1.1f, z*1.1f } );
@@ -153,9 +153,9 @@ SimpleMeshData make_partial_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f 
 		norm.emplace_back( Vec3f{ 0.f, y, z } );
 		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
 
-		tex.emplace_back( Vec2f{ 0.f, (float)((i)/16.f)} );
-		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/16.f)} );
-		tex.emplace_back( Vec2f{ 1.f, (float)((i)/16.f)} );
+		tex.emplace_back( Vec2f{ 0.f, (float)((i)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)} );
 
 
 		pos.emplace_back( Vec3f{ 0.f, y*1.1f, z*1.1f } );
@@ -166,9 +166,37 @@ SimpleMeshData make_partial_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f 
 		norm.emplace_back( Vec3f{ 0.f, y, z } );
 		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
 
-		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/16.f)} );
-		tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/16.f)} );
-		tex.emplace_back( Vec2f{ 1.f, (float)((i)/16.f)} );
+		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)} );
+		
+
+		//Link interior and exterior
+		pos.emplace_back( Vec3f{ 0.f, prevY*1.1f, prevZ*1.1f } );
+		pos.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
+		pos.emplace_back( Vec3f{ 1.f, prevY*1.1f, prevZ*1.1f } );
+
+		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
+		norm.emplace_back( Vec3f{ 0.f, y, z } );
+		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
+
+		tex.emplace_back( Vec2f{ 0.f, (float)((i)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)} );
+
+
+		pos.emplace_back( Vec3f{ 1.f, prevY, prevZ } );
+		pos.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
+		pos.emplace_back( Vec3f{ 1.f, prevY*1.1, prevZ*1.1 } );
+
+		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
+		norm.emplace_back( Vec3f{ 0.f, y, z } );
+		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
+
+		tex.emplace_back( Vec2f{ 0.f, (float)((i)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)} );
+
 
 
 		if (aCapped) {
@@ -181,9 +209,9 @@ SimpleMeshData make_partial_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f 
 			norm.emplace_back( Vec3f{ 1.f, 0, 0 } );
 			norm.emplace_back( Vec3f{ 1.f, 1-prevY, 1-prevZ } );
 
-			tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/16.f)} );
+			tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/aSubdivs)} );
 			tex.emplace_back( Vec2f{ 1.f, 0.f} );
-			tex.emplace_back( Vec2f{ 1.f, (float)((i)/16.f)});
+			tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)});
 
 			//exterior
 			pos.emplace_back( Vec3f{ 1.f, y*1.1f, z*1.1f } );
@@ -194,16 +222,79 @@ SimpleMeshData make_partial_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f 
 			norm.emplace_back( Vec3f{ 2.f*1.1f, 0, 0 } );
 			norm.emplace_back( Vec3f{ 1.f, prevY*1.1f, prevZ*1.1f } );
 
-			tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/16.f)} );
+			tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/aSubdivs)} );
 			tex.emplace_back( Vec2f{ 1.f, 0.f} );
-			tex.emplace_back( Vec2f{ 1.f, (float)((i)/16.f)});
+			tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)});
+
+			
+
+
+			//interior
+			pos.emplace_back( Vec3f{ 1.f, prevY*1.1, prevZ*1.1 } );
+			pos.emplace_back( Vec3f{ 2.f, 0, 0  } );
+			pos.emplace_back( Vec3f{ 1.f, prevY, prevZ } );
+
+			norm.emplace_back( Vec3f{ 1.f, 1-y, 1-z } );
+			norm.emplace_back( Vec3f{ 1.f, 0, 0 } );
+			norm.emplace_back( Vec3f{ 1.f, 1-prevY, 1-prevZ } );
+
+			tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/aSubdivs)} );
+			tex.emplace_back( Vec2f{ 1.f, 0.f} );
+			tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)});
+
+			//exterior
+			pos.emplace_back( Vec3f{ 2.f,  0, 0 } );
+			pos.emplace_back( Vec3f{ 2.f*1.1, 0, 0 } );
+			pos.emplace_back( Vec3f{ 1.f, prevY*1.1, prevZ*1.1 } );
+
+			norm.emplace_back( Vec3f{ 1.f, y*1.1, z*1.1  } );
+			norm.emplace_back( Vec3f{ 2.f*1.1, 0, 0 } );
+			norm.emplace_back( Vec3f{ 1.f, prevY*1.1, prevZ*1.1 } );
+
+			tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/aSubdivs)} );
+			tex.emplace_back( Vec2f{ 1.f, 0.f} );
+			tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)});
 		}
 
 		prevY = y;
 		prevZ = z;
 	}
+	//prevY = std::cos( 0.f );
+	//prevZ = std::sin( 0.f );
+
+	//float y = std::cos( angle );
+	//float z = std::sin( angle );
+	if (aCapped) {
+		//Link interior and exterior
+		pos.emplace_back( Vec3f{ 0.f, prevY*1.1f, prevZ*1.1f } );
+		pos.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
+		pos.emplace_back( Vec3f{ 1.f, prevY*1.1f, prevZ*1.1f } );
+
+		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
+		norm.emplace_back( Vec3f{ 0.f, prevY, prevY } );
+		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
+
+		tex.emplace_back( Vec2f{ 0.f, (float)((aSubdivs)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 0.f, (float)((aSubdivs+1)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((aSubdivs)/aSubdivs)} );
+
+
+		pos.emplace_back( Vec3f{ 1.f, prevY, prevZ } );
+		pos.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
+		pos.emplace_back( Vec3f{ 1.f, prevY*1.1, prevZ*1.1 } );
+
+		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
+		norm.emplace_back( Vec3f{ 0.f, prevY, prevY } );
+		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
+
+		tex.emplace_back( Vec2f{ 0.f, (float)((aSubdivs)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 0.f, (float)((aSubdivs+1)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((aSubdivs)/aSubdivs)} );
+	}
+
+
 	printf("pos.positions.size() = %d\n", pos.size());
-	printf("tex.positions.size() = %d", tex.size());
+	printf("tex.positions.size() = %d\n", tex.size());
 	for( auto& n : norm ) {
 		Vec3f t = N * n;
 		n = t;
@@ -215,8 +306,132 @@ SimpleMeshData make_partial_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f 
 		t /= t.w;
 		p = Vec3f{ t.x, t.y, t.z };
 	}
-	std::vector col( pos.size(), aColor );
-	return SimpleMeshData{ std::move(pos), std::move(col), std::move(norm), std::move(tex) };
+	return SimpleMeshData{ std::move(pos), std::move(norm), std::move(tex) };
+}
+
+SimpleMeshData make_partial_cylinder( bool aCapped, std::size_t aSubdivs, std::size_t cutOff, Vec3f aColor, Mat44f aPreTransform ) {
+	std::vector<Vec3f> pos;
+	std::vector<Vec3f> norm;
+	std::vector<Vec2f> tex;
+	printf("PARTIAL\n");
+	Mat33f const N = mat44_to_mat33( transpose(invert(aPreTransform)) );
+
+	float prevY = std::cosf( 0.f );
+	float prevZ = std::sinf( 0.f );
+
+	for( std::size_t i = 0; i < aSubdivs-cutOff; ++i ) {
+		float const angle = (i+1) / float(aSubdivs) * 2.f * 3.1415926f;
+
+		float y = std::cosf( angle );
+		float z = std::sinf( angle );
+
+		// 2x Two triangles (= 3*2 positions) create one segment of the cylinder’s shell.
+		//interior
+		pos.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
+		pos.emplace_back( Vec3f{ 0.f, y, z } );
+		pos.emplace_back( Vec3f{ 1.f, prevY, prevZ } );
+
+		norm.emplace_back( Vec3f{ 0.f, 1.f-prevY, 1.f-prevZ } );
+		norm.emplace_back( Vec3f{ 0.f, 1.f-y, 1.f-z } );
+		norm.emplace_back( Vec3f{ 0.f, 1.f-prevY, 1.f-prevZ } );
+
+		tex.emplace_back( Vec2f{ 0.f, (float)((i)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)} );
+
+
+		pos.emplace_back( Vec3f{ 0.f, y, z } );
+		pos.emplace_back( Vec3f{ 1.f, y, z } );
+		pos.emplace_back( Vec3f{ 1.f, prevY, prevZ } );
+
+		norm.emplace_back( Vec3f{ 0.f, 1.f-y, 1.f-z } );
+		norm.emplace_back( Vec3f{ 0.f, 1.f-y, 1.f-z } );
+		norm.emplace_back( Vec3f{ 0.f, 1-prevY, 1-prevZ } );
+
+		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)} );
+
+
+		//exterior
+		pos.emplace_back( Vec3f{ 0.f, prevY*1.1f, prevZ*1.1f } );
+		pos.emplace_back( Vec3f{ 0.f, y*1.1f, z*1.1f } );
+		pos.emplace_back( Vec3f{ 1.f, prevY*1.1f, prevZ*1.1f } );
+
+		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
+		norm.emplace_back( Vec3f{ 0.f, y, z } );
+		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
+
+		tex.emplace_back( Vec2f{ 0.f, (float)((i)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)} );
+
+
+		pos.emplace_back( Vec3f{ 0.f, y*1.1f, z*1.1f } );
+		pos.emplace_back( Vec3f{ 1.f, y*1.1f, z*1.1f } );
+		pos.emplace_back( Vec3f{ 1.f, prevY*1.1f, prevZ*1.1f } );
+
+		norm.emplace_back( Vec3f{ 0.f, y, z } );
+		norm.emplace_back( Vec3f{ 0.f, y, z } );
+		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
+
+		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/aSubdivs)} );
+		tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)} );
+		
+
+
+
+
+		if (aCapped) {
+			//interior
+			pos.emplace_back( Vec3f{ 1.f, y, z } );
+			pos.emplace_back( Vec3f{ 1.f, 0, 0 } );
+			pos.emplace_back( Vec3f{ 1.f, prevY, prevZ } );
+
+			norm.emplace_back( Vec3f{ 1.f, 1-y, 1-z } );
+			norm.emplace_back( Vec3f{ 1.f, 0, 0 } );
+			norm.emplace_back( Vec3f{ 1.f, 1-prevY, 1-prevZ } );
+
+			tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/aSubdivs)} );
+			tex.emplace_back( Vec2f{ 1.f, 0.f} );
+			tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)});
+
+			//exterior
+			pos.emplace_back( Vec3f{ 1.f, y*1.1, z*1.1 } );
+			pos.emplace_back( Vec3f{ 1.1f, 0, 0 } );
+			pos.emplace_back( Vec3f{ 1.f, prevY*1.1, prevZ*1.1 } );
+
+			norm.emplace_back( Vec3f{ 1.f, y*1.1f, z*1.1f  } );
+			norm.emplace_back( Vec3f{ 2.f*1.1f, 0, 0 } );
+			norm.emplace_back( Vec3f{ 1.f, prevY*1.1f, prevZ*1.1f } );
+
+			tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/aSubdivs)} );
+			tex.emplace_back( Vec2f{ 1.f, 0.f} );
+			tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)});
+
+		}
+
+		prevY = y;
+		prevZ = z;
+	}
+
+
+
+	printf("pos.positions.size() = %d\n", pos.size());
+	printf("tex.positions.size() = %d\n", tex.size());
+	for( auto& n : norm ) {
+		Vec3f t = N * n;
+		n = t;
+	}
+
+	for( auto& p : pos ) {
+		Vec4f p4{ p.x, p.y, p.z, 1.f };
+		Vec4f t = aPreTransform * p4;
+		t /= t.w;
+		p = Vec3f{ t.x, t.y, t.z };
+	}
+	return SimpleMeshData{ std::move(pos), std::move(norm), std::move(tex) };
 }
 
 
