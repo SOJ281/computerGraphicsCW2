@@ -80,6 +80,7 @@ SimpleMeshData make_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f aColor, 
 	printf("tex.positions.size() = %ld", tex.size());
 	//Vec3f operator*( Mat33f const& aLeft, Vec3f const& aRight )
 	/**/
+	//norm = calcNorms(pos);
 	for( auto& n : norm ) {
 		//Vec4f p4{ n.x, n.y, n.z, 1.f };
 		Vec3f t = N * n;
@@ -143,7 +144,6 @@ SimpleMeshData make_partial_building( bool aCapped, std::size_t aSubdivs, std::s
 		tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/aSubdivs)} );
 		tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)} );
 
-
 		//exterior
 		pos.emplace_back( Vec3f{ 0.f, prevY*1.1f, prevZ*1.1f } );
 		pos.emplace_back( Vec3f{ 0.f, y*1.1f, z*1.1f } );
@@ -187,7 +187,7 @@ SimpleMeshData make_partial_building( bool aCapped, std::size_t aSubdivs, std::s
 
 		pos.emplace_back( Vec3f{ 1.f, prevY, prevZ } );
 		pos.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
-		pos.emplace_back( Vec3f{ 1.f, prevY*1.1, prevZ*1.1 } );
+		pos.emplace_back( Vec3f{ 1.f, prevY*1.1f, prevZ*1.1f } );
 
 		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
 		norm.emplace_back( Vec3f{ 0.f, y, z } );
@@ -230,7 +230,7 @@ SimpleMeshData make_partial_building( bool aCapped, std::size_t aSubdivs, std::s
 
 
 			//interior
-			pos.emplace_back( Vec3f{ 1.f, prevY*1.1, prevZ*1.1 } );
+			pos.emplace_back( Vec3f{ 1.f, prevY*1.1f, prevZ*1.1f } );
 			pos.emplace_back( Vec3f{ 2.f, 0, 0  } );
 			pos.emplace_back( Vec3f{ 1.f, prevY, prevZ } );
 
@@ -244,12 +244,12 @@ SimpleMeshData make_partial_building( bool aCapped, std::size_t aSubdivs, std::s
 
 			//exterior
 			pos.emplace_back( Vec3f{ 2.f,  0, 0 } );
-			pos.emplace_back( Vec3f{ 2.f*1.1, 0, 0 } );
-			pos.emplace_back( Vec3f{ 1.f, prevY*1.1, prevZ*1.1 } );
+			pos.emplace_back( Vec3f{ 2.2f, 0, 0 } );
+			pos.emplace_back( Vec3f{ 1.f, prevY*1.1f, prevZ*1.1f } );
 
-			norm.emplace_back( Vec3f{ 1.f, y*1.1, z*1.1  } );
-			norm.emplace_back( Vec3f{ 2.f*1.1, 0, 0 } );
-			norm.emplace_back( Vec3f{ 1.f, prevY*1.1, prevZ*1.1 } );
+			norm.emplace_back( Vec3f{ 1.f, y*1.1f, z*1.1f  } );
+			norm.emplace_back( Vec3f{ 2.2f, 0, 0 } );
+			norm.emplace_back( Vec3f{ 1.f, prevY*1.1f, prevZ*1.1f } );
 
 			tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/aSubdivs)} );
 			tex.emplace_back( Vec2f{ 1.f, 0.f} );
@@ -281,7 +281,7 @@ SimpleMeshData make_partial_building( bool aCapped, std::size_t aSubdivs, std::s
 
 		pos.emplace_back( Vec3f{ 1.f, prevY, prevZ } );
 		pos.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
-		pos.emplace_back( Vec3f{ 1.f, prevY*1.1, prevZ*1.1 } );
+		pos.emplace_back( Vec3f{ 1.f, prevY*1.1f, prevZ*1.1f } );
 
 		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
 		norm.emplace_back( Vec3f{ 0.f, prevY, prevY } );
@@ -292,9 +292,11 @@ SimpleMeshData make_partial_building( bool aCapped, std::size_t aSubdivs, std::s
 		tex.emplace_back( Vec2f{ 1.f, (float)((aSubdivs)/aSubdivs)} );
 	}
 
+	norm = calcNorms(pos);
 
-	printf("pos.positions.size() = %d\n", pos.size());
-	printf("tex.positions.size() = %d\n", tex.size());
+
+	printf("pos.positions.size() = %ld\n", pos.size());
+	printf("tex.positions.size() = %ld\n", tex.size());
 	for( auto& n : norm ) {
 		Vec3f t = N * n;
 		n = t;
@@ -398,9 +400,9 @@ SimpleMeshData make_partial_cylinder( bool aCapped, std::size_t aSubdivs, std::s
 			tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)});
 
 			//exterior
-			pos.emplace_back( Vec3f{ 1.f, y*1.1, z*1.1 } );
+			pos.emplace_back( Vec3f{ 1.f, y*1.1f, z*1.1f } );
 			pos.emplace_back( Vec3f{ 1.1f, 0, 0 } );
-			pos.emplace_back( Vec3f{ 1.f, prevY*1.1, prevZ*1.1 } );
+			pos.emplace_back( Vec3f{ 1.f, prevY*1.1f, prevZ*1.1f } );
 
 			norm.emplace_back( Vec3f{ 1.f, y*1.1f, z*1.1f  } );
 			norm.emplace_back( Vec3f{ 2.f*1.1f, 0, 0 } );
@@ -415,11 +417,12 @@ SimpleMeshData make_partial_cylinder( bool aCapped, std::size_t aSubdivs, std::s
 		prevY = y;
 		prevZ = z;
 	}
+	//norm = calcNorms(pos);
 
 
 
-	printf("pos.positions.size() = %d\n", pos.size());
-	printf("tex.positions.size() = %d\n", tex.size());
+	printf("pos.positions.size() = %ld\n", pos.size());
+	printf("tex.positions.size() = %ld\n", tex.size());
 	for( auto& n : norm ) {
 		Vec3f t = N * n;
 		n = t;
@@ -478,6 +481,7 @@ SimpleMeshData make_div_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f aCol
 		prevY = y;
 		prevZ = z;
 	}
+	//norm = calcNorms(pos);
 
 	for( auto& p : pos ) {
 		Vec4f p4{ p.x, p.y, p.z, 1.f };

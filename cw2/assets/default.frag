@@ -64,7 +64,7 @@ void main() {
     float nDotL = max( 0.0, dot(normal, uLightDir) );
 
 
-    vec3 reflectDir = reflect(-uLightDir, normal);  
+    vec3 reflectDir = reflect(-uLightDir, normal); 
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess * 100);
     //vec3 specular = uSpecular * (spec * material.specular); 
 

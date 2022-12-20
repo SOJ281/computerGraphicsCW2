@@ -19,11 +19,14 @@
 #include "defaults.hpp"
 #include "cylinder.hpp"
 //#include "loadcustom.hpp"
+#include "loadTexture.hpp"
 #include "loadobj.hpp"
 #include <string>
 #include <cstring>
 #include <stb_image.h>
+//#include <stb_image/stb_image.h>
 #include <map>
+
 
 
 namespace
@@ -77,7 +80,6 @@ namespace
 		float shininess;
 	}; 
 
-	unsigned int loadTexture(const char *path);
 	void setMaterial(Material material, ShaderProgram* prog);
 
 	void glfw_callback_error_( int, char const* );
@@ -258,10 +260,10 @@ int main() try
 	};
 	Material shinyShiny = {
 		Vec3f{.01f, .01f, .01f},
-		Vec3f{0.5f, 0.5f, 0.f},
-		Vec3f{1.f, 1.f, 0.f},
-		Vec3f{0.f, 0.f, 0.f},
-		.4f
+		Vec3f{0.8f, 0.5f, 0.f},
+		Vec3f{1.f, 1.f, 0.4f},
+		Vec3f{0.05f, 0.05f, 0.05f},
+		.9f
 	};
 	Material highDiffuse = {
 		Vec3f{.01f, .01f, .01f},
@@ -349,7 +351,7 @@ int main() try
 	for (float i = 0; i < rows; i++)
 		for (float l = 0; l < 2; l++) {
 			chapel.emplace_back(make_change(pillar, make_translation( { 5.f - 10.f*l, 0.f, 15.f + 15.f * i }) ));
-			//chapel.emplace_back(make_cylinder( true, 18, Vec3f{1, 0, 1}, make_translation( { 22.f - 44.f*i, 0.f, 29.f })));
+			//chapel.emplace_back(make_cylinder( true, 18, Vec3f{1, 0,0 1}, make_translation( { 22.f - 44.f*i, 0.f, 29.f })));
 		
 			PointLight p1;
 			p1.position = Vec3f{ 3.f - 6.f*l, 4.f, 15.f + 15.f * i };
@@ -374,18 +376,7 @@ int main() try
 			transLocs.emplace_back(thisLoc);
 			transPos.emplace_back(transPos[transPos.size()-1] + stainWindow.positions.size());
 		}
-	/*
-	unsigned int transparentVAO, transparentVBO;
-    glGenVertexArrays(1, &transparentVAO);
-    glGenBuffers(1, &transparentVBO);
-    glBindVertexArray(transparentVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, transparentVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(transparentVertices), transparentVertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    glBindVertexArray(0);*/
+
 
 
 	auto picture = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_rotation_z( -3.141592f / 2.f ) * make_rotation_y( 3.141592f / 2.f ) * make_scaling( .1f, 6.f, 7.62f ));//so 48 meter
@@ -412,7 +403,7 @@ int main() try
 
 	
 
-	auto roof = make_partial_cylinder( true, 16, 8, {.02f, .02f, .02f},  make_scaling( 1.f, 1.f, 1.f ));
+	auto roof = make_partial_cylinder( true, 124, 62, {.02f, .02f, .02f},  make_scaling( 1.f, 1.f, 1.f ));
 	roof = make_change(roof, make_rotation_x( -3.141592f / 2.f )* make_rotation_z( 3.141592f / 2.f ) );
 	roof = make_change(roof, make_scaling( 27.f, 20.f, 50.f ) );
 	roof = make_change(roof, make_translation( {0.f, 30.f, 55.f }) );
@@ -425,7 +416,7 @@ int main() try
 
 
 	auto shiny = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_scaling( 2.f, 2.f, 2.f ));//so 48 meter
-	chapel.emplace_back(make_change(shiny, make_translation( {0.f, 16.f, 0.f }) ));
+	chapel.emplace_back(make_change(shiny, make_translation( {0.f, 59.f, 0.f }) ));
 	int shinyCount = 1;
 
 
@@ -454,6 +445,14 @@ int main() try
 	//GLuint transparentVao = create_vaoM(&transparent[0], lampCount);
 	GLuint transparentVao = create_vaoM(&transparent[0], transparent.size());
 	printf("\nNINJA2\n");
+
+	std::vector<SimpleMeshData> movingObjects;
+
+	auto doorA= make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_translation( Vec3f{ 1.f, 0.f, 0.f} ));//so 48 meter
+	doorA = make_change(doorA, make_scaling( 2.f, 4.f, 0.1f ) );
+	movingObjects.emplace_back(make_change(doorA, make_translation( {-4.f, 2.f, 5.f }) ));
+	GLuint movingVao = create_vaoM(&movingObjects[0], 1);
+
 
 
 
@@ -565,27 +564,26 @@ int main() try
 		sunXloc += .01f;
 		if (sunXloc > .99f)
 			sunXloc = -1.f;
-		Vec3f lightDir = normalize( Vec3f{ 0.f, 1.f, 1.f } );
+		Vec3f lightDir = normalize( Vec3f{ 0.f, 1.f, -1.f } );
 
-		Vec3f lightPos = Vec3f{ 0.f, 1.f, 0.f };
+		Vec3f lightPos = Vec3f{ 0.f, -1.f, 1.f };
 
-		/*
-		std::map<float, Vec3f> sorted;
-		Vec3f camPosi = Vec3f {state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z };
-        for (unsigned int i = 0; i < transLocs.size(); i++) {
-            float distance = length(camPosi - transLocs[i]);
-            sorted[distance] = transLocs[i];
-        }*/
+		Vec3f doorHinge = Vec3f{-4.f, 2.f, 5.f };
+		Vec3f noHinge = Vec3f{0.f, 0.f, 0.f };
 
+		
 		std::map<float, int> sorted;
 		Vec3f camPosi = Vec3f {state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z };
 		//printf("campos: (%f, %f, %f)\n", state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z);
 		//printf("campos: (%f, %f, %f)\n", transLocs[0].x, transLocs[0].y, transLocs[0].z);
+		
         for (unsigned int i = 0; i < transLocs.size(); i++) {
             float distance = length(camPosi + transLocs[i]);
-			//printf("Distance:%f", distance);
+			if (sorted.find(distance) != sorted.end()) //if two values that are the same exist
+				distance += 0.00001f;
             sorted[distance] = i;
         }
+		
 
 
 		
@@ -607,9 +605,14 @@ int main() try
 		glUniform3fv(glGetUniformLocation(prog.programId(), "uLightDir"), 1, &lightDir.x ); //lightDir uLightDir
 		glUniform3f( glGetUniformLocation(prog.programId(), "uLightDiffuse"), .6f, .6f, .6f ); //lightDiffuse
 		glUniform3f( glGetUniformLocation(prog.programId(), "uSceneAmbient"), 0.1f, 0.1f, 0.1f ); //uSceneAmbient
+		glUniform3f( glGetUniformLocation(prog.programId(), "uSpecular"), 0.5f, 0.5f, 0.5f ); //uSceneAmbient
 		//printf("normalMatrix: (%f, %f, %f)\n", state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z);
-		glUniform3f( glGetUniformLocation(prog.programId(), "viewPos"), state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z ); //uSceneAmbient
+		glUniform3f(glGetUniformLocation(prog.programId(), "viewPos"), state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z ); //uSceneAmbient
 
+		//glUniform3f( glGetUniformLocation(prog.programId(), "rotateDoor"), make_rotation_x( 0 ) );
+
+
+		 make_rotation_x( angle );
 		
 		#include <string>
 		for (int i = 0; i < 6; i++) {
@@ -630,7 +633,8 @@ int main() try
 		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "uProjCameraWorld"), 1, GL_TRUE, projCameraWorld.v );
 		glUniformMatrix3fv(glGetUniformLocation(prog.programId(), "uNormalMatrix"),1, GL_TRUE, normalMatrix.v);
 		Mat44f blankMatrix = make_translation( { 1.f, 1.f, 1.f } );
-		glUniformMatrix3fv(glGetUniformLocation(prog.programId(), "transformation"),1, GL_TRUE, blankMatrix.v);
+		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "rotation"),1, GL_TRUE, make_rotation_x( 0 ).v);
+		glUniform3fv(glGetUniformLocation(prog.programId(), "point"),1, &noHinge.x);
 
 		
 		//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
@@ -736,8 +740,6 @@ int main() try
 
 
 		setMaterial(brass, state.prog);
-		//glActiveTexture(GL_TEXTURE0);
-        //glBindTexture(GL_TEXTURE_2D, ourFish);
 		glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, ourSaviour);
 		counter += aquarium.positions.size() * aquariumCount;
@@ -750,6 +752,17 @@ int main() try
 		//glDrawElements( GL_TRIANGLES, vertexCount, GL_UNSIGNED_BYTE, NULL);
 		//glDrawElements( GL_TRIANGLES, vertexCount, GL_UNSIGNED_SHORT, NULL);
 
+		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "rotation"),1, GL_TRUE, make_rotation_y( angle).v);
+		glUniform3fv(glGetUniformLocation(prog.programId(), "point"),1, &doorHinge.x);
+
+
+		glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, NULL);
+		glBindVertexArray( movingVao );
+		glDrawArrays( GL_TRIANGLES, 0, doorA.positions.size());
+
+
+		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "rotation"),1, GL_TRUE, make_rotation_y(0).v);
 		glBindVertexArray( 0 );
 
 		glBindVertexArray( transparentVao );
@@ -928,6 +941,13 @@ namespace
 					else if (GLFW_RELEASE == aAction)
 						state->camControl.actionSlowDown = false;
 				}
+				if (GLFW_KEY_ENTER == aKey) {
+					GLint windowWidth, windowHeight;
+					glfwGetWindowSize(aWindow, &windowWidth, &windowHeight);
+					uint8_t* pixels = new uint8_t[windowWidth * windowHeight * 3];
+					glReadPixels(0, 0, windowWidth, windowHeight, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+					createTexture(windowWidth, windowHeight, pixels);
+				}
 			}
 
 			// If camera is not active then stop movement
@@ -975,35 +995,6 @@ namespace
 			state->camControl.lastX = float(aX);
 			state->camControl.lastY = float(aY);
 		}
-	}
-	unsigned int loadTexture(char const * path) {
-	
-		assert( path );
-		unsigned int textureID;
-		glGenTextures(1, &textureID);
-
-		int width, height, nrComponents;
-		unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
-		GLenum format = 0;
-		if (nrComponents == 1)
-			format = GL_RED;
-		else if (nrComponents == 3)
-			format = GL_RGB;
-		else if (nrComponents == 4)
-			format = GL_RGBA;
-
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		stbi_image_free(data);
-
-		return textureID;
 	}
 	
 	void setMaterial(Material material, ShaderProgram* prog) {

@@ -23,12 +23,14 @@ struct SimpleMeshData
 
 SimpleMeshData concatenate( SimpleMeshData, SimpleMeshData const& );
 SimpleMeshData make_change( SimpleMeshData, Mat44f );
+std::vector<Vec3f> calcNorms(std::vector<Vec3f> pos);
 
 
 GLuint create_vao( SimpleMeshData const& );
 GLuint create_vaoM( SimpleMeshData* , int number);
 SimpleMeshData make_cube(Vec3f aColor, Mat44f aPreTransform );
-SimpleMeshData invert_normals(SimpleMeshData aM) ;
+SimpleMeshData invert_normals(SimpleMeshData aM);
+SimpleMeshData make_frame(Vec3f aColor, Mat44f aPreTransform );
 
 
 #endif // SIMPLE_MESH_HPP_C6B749D6_C83B_434C_9E58_F05FC27FEFC9
