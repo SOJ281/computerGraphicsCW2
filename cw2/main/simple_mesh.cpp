@@ -221,9 +221,20 @@ SimpleMeshData make_cube(Vec3f aColor, Mat44f aPreTransform ) {
 	//float rightKCube[sizeof(kCubePositions)/sizeof(kCubePositions[0]) * 2];// = new float[kCubePositions.length];
 	for (int i = 0; i < originSize; i+=3) {
 		pos.emplace_back( Vec3f{ kCubePositions[i], kCubePositions[i+1], kCubePositions[i+2] } );
-		norm.emplace_back( Vec3f{ kCubePositions[i], kCubePositions[i+1], kCubePositions[i+2] } );
+		//norm.emplace_back( Vec3f{ kCubePositions[i], kCubePositions[i+1], kCubePositions[i+2] } );
 		//norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
 	}
+	for (int i = 0; i < pos.size(); i+=3) {
+		Vec3f U = pos[i+1] - pos[i];
+		Vec3f V = pos[i+2] - pos[i];
+		float normX = U.y*V.z - U.z*V.y;
+		float normY = U.z*V.x - U.x*V.z;
+		float normZ = U.x*V.y - U.y*V.x;
+		norm.emplace_back( Vec3f{ normX, normY, normZ } );
+		norm.emplace_back( Vec3f{ normX, normY, normZ } );
+		norm.emplace_back( Vec3f{ normX, normY, normZ } );
+	}
+
 
 	for (int i = 0; i < 6; i++) {
 		tex.emplace_back( Vec2f{ 0.f, 0.f} );
@@ -237,7 +248,9 @@ SimpleMeshData make_cube(Vec3f aColor, Mat44f aPreTransform ) {
 	printf("\nCube:\n");
 	printf("pos.positions.size() = %ld\n", pos.size());
 	printf("tex.positions.size() = %ld\n", tex.size());
+	printf("norm.positions.size() = %ld\n", norm.size());
 
+/*
 	for( auto& n : norm ) {
 		//Vec4f p4{ n.x, n.y, n.z, 1.f };
 		Vec3f t = N * n;
@@ -245,7 +258,7 @@ SimpleMeshData make_cube(Vec3f aColor, Mat44f aPreTransform ) {
 		n = t;
 		//n = { 1, 1, 1};
 	}
-
+*/
 	for( auto& p : pos ) {
 		Vec4f p4{ p.x, p.y, p.z, 1.f };
 		Vec4f t = aPreTransform * p4;

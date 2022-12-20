@@ -23,6 +23,7 @@
 #include <string>
 #include <cstring>
 #include <stb_image.h>
+#include <map>
 
 
 namespace
@@ -77,7 +78,7 @@ namespace
 	}; 
 
 	unsigned int loadTexture(const char *path);
-	void setMaterial(Material material);
+	void setMaterial(Material material, ShaderProgram* prog);
 
 	void glfw_callback_error_( int, char const* );
 
@@ -179,12 +180,15 @@ int main() try
 	OGL_CHECKPOINT_ALWAYS();
 
 	// Global GL setup goes here
-	glEnable(GL_FRAMEBUFFER_SRGB);
-	//glEnable(GL_CULL_FACE);
-	glEnable(GL_DEPTH_TEST);
-	//glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glClearColor(0.f, 0.f, 0.1f, 0.0f);
+	//glEnable( GL_CULL_FACE );
+	glEnable( GL_DEPTH_TEST );
+	//glDepthMask(GL_TRUE);
+	glEnable(GL_BLEND);
+	glDepthFunc(GL_LESS);
+	glDepthRange(-1.0f, 1.0f);
+	glClearColor( 0.f, 0.f, 0.1f, 1.0f );
+	glEnable( GL_FRAMEBUFFER_SRGB );
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
 
 
 	OGL_CHECKPOINT_ALWAYS();
@@ -215,35 +219,6 @@ int main() try
 	// TODO: 
 
 	/*
-	std::vector<SimpleMeshData> besties;
-	auto bestie = load_simple_binary_mesh( "assets/Armadillo.comp3811bin" );
-	auto bestieIndex = load_simple_binary_mesh_index( "assets/Armadillo.comp3811bin" );
-	int friends = 2;
-	for (float i = 0; i < friends; i++)
-		for (float l = 0; l < friends; l++)
-			besties.emplace_back(make_change(bestie, make_translation( { -5.f + 10*i, 0.f, -5.f + 10*l }) ));
-	for (int i = 0; i < bestie.positions.size(); i++) {
-		if (bestie.positions[i].x != bestieIndex.positions[bestieIndex.indices[i]].x || bestie.positions[i].y != bestieIndex.positions[bestieIndex.indices[i]].y 
-		 || bestie.positions[i].z != bestieIndex.positions[bestieIndex.indices[i]].z)
-			printf("value =(%f,%f,%f)\n", bestie.positions[i].x,bestie.positions[i].y,bestie.positions[i].z);
-	}
-
-	//auto floor = make_cube({1, 0, 1}, make_scaling( 200.f, 2.f, 200.f ) * make_translation( { -100.f, -2.f, -100.f }));
-	auto floor = make_cube( Vec3f{1, 1, 1}, make_scaling( 200.f, 2.f, 200.f ) * make_translation( { 0.f, -1.f, 0.f }));
-	besties.emplace_back(floor);
-
-	auto pillar = make_cylinder( true, 18, {1, 0, 1}, make_scaling( 5.f, 1.f, 1.f ));
-	int rows = 3;
-	for (float i = 0; i < rows; i++)
-		for (float l = 0; l < 2; l++)
-			besties.emplace_back(make_change(pillar, make_translation({ 4.f - l * 8.f, 0.f, 9.f + i * 5.f }) * make_rotation_z(3.141592f / 2.f)));
-
-	GLuint vao = create_vaoM(&besties[0],11);
-	printf("floor =(%ld)", floor.positions.size());
-	printf("pillar =(%ld)", pillar.positions.size());
-	int vertexCount = bestie.positions.size() *friends * friends + floor.positions.size() +pillar.positions.size() * rows*2;*/
-
-	/*
 	Vec3f ambient;
 	Vec3f diffuse;
 	Vec3f specular;
@@ -255,7 +230,7 @@ int main() try
 		Vec3f{.01f, .01f, .01f},
 		Vec3f{.4f, .4f, .4f},
 		Vec3f{0.f, 0.f, 0.f},
-		Vec3f{0.0f, 0.05f, 0.05f},
+		Vec3f{0.01f, 0.01f, 0.01f},
 		.4f
 	};
 	Material vantaBlack = {
@@ -264,6 +239,13 @@ int main() try
 		Vec3f{0.f, 0.f, 0.f},
 		Vec3f{0.0f, 0.0f, 0.0f},
 		.4f
+	};
+	Material lampGlass = {
+		Vec3f{0.4f, 0.4f, 0.4f},
+		Vec3f{0.780392f, 0.568627f, 0.113725f},
+		Vec3f{0.6f, 0.6f, 0.6f},
+		Vec3f{0.05f, 0.05f, 0.05f}, //Most objects don't emit light
+		0.8f
 	};
 
 	//For coursework objective
@@ -281,7 +263,7 @@ int main() try
 		Vec3f{0.f, 0.f, 0.f},
 		.4f
 	};
-	Material noPun = {
+	Material highDiffuse = {
 		Vec3f{.01f, .01f, .01f},
 		Vec3f{1.f, 1.f, 0.f},
 		Vec3f{0.f, 0.f, 0.f},
@@ -304,7 +286,6 @@ int main() try
 		Vec3f{0.f, 0.f, 0.f},
 		.4f
 	};
-
 	Material wood = {
 		Vec3f{0.f, 0.f, 0.f},
 		Vec3f{0.356863f, 0.223529f, 0.019608f},
@@ -316,10 +297,16 @@ int main() try
 	unsigned int ourSaviour = loadTexture("assets/markus.png");
 	unsigned int ourBlank = loadTexture("assets/Solid_white.png");
 	unsigned int ourVoid = loadTexture("assets/Solid_black.png");
+	//unsigned int ourFish = loadTexture("assets/nong-v-wcMK9KKbmms-unsplash.jpg");
+	unsigned int ourFish = loadTexture("assets/fishTransparent.png");
 	
 
 
 	std::vector<SimpleMeshData> chapel;
+	std::vector<SimpleMeshData> transparent;
+	std::vector<Vec3f> transLocs;
+	std::vector<int> transPos;
+	transPos.emplace_back(0);
 
 	auto floor = make_cube( Vec3f{0.07f, 0.07f, 0.07f}, make_scaling( 200.f, 2.f, 200.f ) * make_translation( { 0.f, -1.f, 0.f }));
 	chapel.emplace_back(floor);
@@ -331,15 +318,22 @@ int main() try
 		chapel.emplace_back(make_change(frontWall, make_translation( { 17.f - 34.f*i, 15.f, 5.f }) ));
 
 
-	auto sideWall = make_cube( Vec3f{.02f, .02f, .02f}, make_scaling( 1.f, 15.f, 24.f ));//so 48 meter
-	int sideWallBits = 2;
-	for (float i = 0; i < sideWallBits; i++)
-		chapel.emplace_back(make_change(sideWall, make_translation( { 29.f - 58.f*i, 15.f, 30.f }) ));
+	//auto sideWall = make_cube( Vec3f{.02f, .02f, .02f}, make_scaling( 1.f, 15.f, 24.f ));//so 48 meter
+	auto sideWall = make_cube( Vec3f{.02f, .02f, .02f}, make_scaling( 1.f, 5.f, 24.f ));//so 48 meter
+	auto sideMidWall = make_cube( Vec3f{.02f, .02f, .02f}, make_scaling( 1.f, 5.f, 5.f ));//so 48 meter
+	int sideWallBits = 10;
+	for (float i = 0; i < 2; i++) {
+		for (float l = 0; l < 2; l++)
+			chapel.emplace_back(make_change(sideWall, make_translation( { 29.f - 58.f*i, 5.f + 20.f*l, 30.f }) ));
+		for (float l = 0; l < 3; l++)
+			chapel.emplace_back(make_change(sideMidWall, make_translation( { 29.f - 58.f*i, 15.f, 11.f + l * 19.f }) ));
+	}
 
 
 	auto pillar = make_cylinder( true, 18, {.1f, 0, .1f}, make_scaling( .75f, 10.f, .75f ) * make_rotation_z( 3.141592f / 2.f ));
-	auto lamp = make_cylinder( true, 18, {.1f, .1f, .1f}, make_scaling( .1f, 5.f, .1f ) * make_rotation_z( 3.141592f / 2.f ));
-	//lamp = invert_normals(lamp);
+
+	auto lamp = make_cylinder( true, 18, {.1f, .1f, .1f}, make_scaling( .4f, 2.f, .4f ) * make_rotation_z( 3.141592f / 2.f ));
+	lamp = invert_normals(lamp);
 	struct PointLight {
 			Vec3f position;
 			float constant;
@@ -366,9 +360,20 @@ int main() try
 			p1.diffuse = Vec3f{ .5f, .4f, .05f };
 			p1.specular = Vec3f{ .5f, .4f, .05f };
 			PointLightData.emplace_back(p1);
-			chapel.emplace_back(make_change(lamp, make_translation( { 3.f - 6.f*l, 4.f, 17.f + 15.f * i }) ));
+			transparent.emplace_back(make_change(lamp, make_translation( { 3.f - 6.f*l, 2.f, 15.f + 15.f * i }) ));
+			transLocs.emplace_back(Vec3f{ 3.f - 6.f*l, 2.f, 15.f + 15.f * i });
+			transPos.emplace_back(transPos[transPos.size()-1] + lamp.positions.size());
 		}
 
+	int windowCount = 4;
+	auto stainWindow = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_rotation_y( 3.141592f) * make_scaling( .1f, 5.f, 5.f ));//so 48 meter
+	for (float i = 0; i < 2; i++)
+		for (float l = 0; l < 2; l++) {
+			Vec3f thisLoc = Vec3f{ 29.f - 58.f*l, 15.f, 21.f + 18.f * i };
+			transparent.emplace_back(make_change(stainWindow, make_translation( thisLoc) ));
+			transLocs.emplace_back(thisLoc);
+			transPos.emplace_back(transPos[transPos.size()-1] + stainWindow.positions.size());
+		}
 	/*
 	unsigned int transparentVAO, transparentVBO;
     glGenVertexArrays(1, &transparentVAO);
@@ -414,17 +419,42 @@ int main() try
 	chapel.emplace_back(roof);
 	int roofCount = 1;
 
-	auto plutonium = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_scaling( 2.f, 2.f, 2.f ));//so 48 meter
+	auto plutonium = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_scaling( 2.f, 2.f, 2.f ) * make_translation( {0.f, 5.f, 0.f }));//so 48 meter
 	chapel.emplace_back(plutonium);
 	int plutoniumCount = 1;
+
+
+	auto shiny = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_scaling( 2.f, 2.f, 2.f ));//so 48 meter
+	chapel.emplace_back(make_change(shiny, make_translation( {0.f, 16.f, 0.f }) ));
+	int shinyCount = 1;
+
+
+	auto diffuseObject = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_scaling( 2.f, 2.f, 2.f ));//so 48 meter
+	chapel.emplace_back(make_change(diffuseObject, make_translation( {0.f, 22.f, 0.f }) ));
+	int diffuseCount = 1;
+
+
+	auto aquarium = make_cylinder( true, 18, {.5f, 0.5f, .5f}, make_scaling( 3.f, 10.f, 3.f ) * make_rotation_z( 3.141592f / 2.f ));
+	//auto aquarium = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_rotation_z( -3.141592f / 2.f ) * make_rotation_y( 3.141592f / 2.f ) * make_scaling( .1f, 6.f, 7.62f ));//so 48 meter
+	chapel.emplace_back(make_change(aquarium, make_translation( {10.f, 5.f, 0.f }) ));
+	int aquariumCount = 1;
+
+
+	//auto window = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_scaling( 2.f, 2.f, 2.f ));//so 48 meter
+	//chapel.emplace_back(make_change(window, make_translation( {0.f, 0.f, 0.f }) ));
+	//int windowCount = 1;
 
 
 	int vertexCount = floor.positions.size() + frontWall.positions.size() * wallBits + sideWall.positions.size() * sideWallBits 
 	+ pillar.positions.size() * rows*2;
 	float sunXloc = -1.f;
 	printf("\nNINJA\n");
-	GLuint vao = create_vaoM(&chapel[0], 1 + wallBits + sideWallBits + rows*2 + lampCount + pictures + backrooms + benchCount + roofCount + plutoniumCount);
+	GLuint vao = create_vaoM(&chapel[0], 1 + wallBits + sideWallBits + rows*2+ pictures + backrooms 
+	+ benchCount + roofCount + plutoniumCount + shinyCount + diffuseCount + aquariumCount);
+	//GLuint transparentVao = create_vaoM(&transparent[0], lampCount);
+	GLuint transparentVao = create_vaoM(&transparent[0], transparent.size());
 	printf("\nNINJA2\n");
+
 
 
 	OGL_CHECKPOINT_ALWAYS();
@@ -467,6 +497,8 @@ int main() try
 		if (angle >= 2.f * kPi_)
 			angle -= 2.f * kPi_;
 
+		
+
 
 
 		//Camera speed decision.
@@ -499,7 +531,7 @@ int main() try
 
 
 		//TODO: define and compute projCameraWorld matrix
-		Mat44f model2world = make_rotation_y(0);
+		Mat44f model2world = kIdentity44f;
 		Mat44f Rx = make_rotation_x( state.camControl.theta );
 		Mat44f Ry = make_rotation_y( state.camControl.phi );
 		Mat44f world2camera = make_translation(state.camControl.cameraPos);
@@ -533,9 +565,28 @@ int main() try
 		sunXloc += .01f;
 		if (sunXloc > .99f)
 			sunXloc = -1.f;
-		Vec3f lightDir = normalize( Vec3f{ 0.f, .5f, -1.f } );
+		Vec3f lightDir = normalize( Vec3f{ 0.f, 1.f, 1.f } );
 
 		Vec3f lightPos = Vec3f{ 0.f, 1.f, 0.f };
+
+		/*
+		std::map<float, Vec3f> sorted;
+		Vec3f camPosi = Vec3f {state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z };
+        for (unsigned int i = 0; i < transLocs.size(); i++) {
+            float distance = length(camPosi - transLocs[i]);
+            sorted[distance] = transLocs[i];
+        }*/
+
+		std::map<float, int> sorted;
+		Vec3f camPosi = Vec3f {state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z };
+		//printf("campos: (%f, %f, %f)\n", state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z);
+		//printf("campos: (%f, %f, %f)\n", transLocs[0].x, transLocs[0].y, transLocs[0].z);
+        for (unsigned int i = 0; i < transLocs.size(); i++) {
+            float distance = length(camPosi + transLocs[i]);
+			//printf("Distance:%f", distance);
+            sorted[distance] = i;
+        }
+
 
 		
 
@@ -547,7 +598,6 @@ int main() try
 		//Draw frame
 		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 		glUseProgram( prog.programId() );
-
 
 
 		glUniform1i(glGetUniformLocation(prog.programId(), "texture.diffuse"), 0); //lightDir uLightDir
@@ -587,21 +637,13 @@ int main() try
 		glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 		
 		glBindVertexArray( vao );
+		glUniform1f(glGetUniformLocation(prog.programId(), "material.opacity"), 1);
+		//glUniform1f(glGetUniformLocation(prog.programId(), "material.opacity"), 0);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, NULL);
-/*
-		glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &vantaBlack.ambient.x );
-		glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &vantaBlack.diffuse.x );
-		glUniform3fv(glGetUniformLocation(prog.programId(), "material.specular"), 1, &vantaBlack.specular.x );
-		glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"), vantaBlack.shininess);
-*/
 
-		glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &stone.ambient.x );
-		glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &stone.diffuse.x );
-		glUniform3fv(glGetUniformLocation(prog.programId(), "material.specular"), 1, &stone.specular.x );
-		glUniform3fv(glGetUniformLocation(prog.programId(), "material.emissive"), 1, &vantaBlack.emissive.x );
-		glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"), stone.shininess);
+		setMaterial(stone, state.prog);
 		int counter = floor.positions.size();
 		glDrawArrays( GL_TRIANGLES, 0, counter);
 		
@@ -613,31 +655,13 @@ int main() try
 		counter += sideWall.positions.size() * sideWallBits;
 		glDrawArrays( GL_TRIANGLES, 0, counter);
 
-		glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &brass.ambient.x );
-		glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &brass.diffuse.x );
-		glUniform3fv(glGetUniformLocation(prog.programId(), "material.specular"), 1, &brass.specular.x );
-		glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"),brass.shininess);
+		setMaterial(brass, state.prog);
 		counter += pillar.positions.size() * rows*2;
 		glDrawArrays( GL_TRIANGLES, 0, counter);
 
 
-		counter += lamp.positions.size() * lampCount;
-		glDrawArrays( GL_TRIANGLES, 0, counter);
-
-
-		//counter += door.positions.size();
-		//glDrawArrays( GL_TRIANGLES, 0, counter);
-
-		//counter += backSwall.positions.size()*backSwallBits;
-		//glDrawArrays( GL_TRIANGLES, 0, counter);
-
-
-		glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &stone.ambient.x );
-		glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &stone.diffuse.x );
-		glUniform3fv(glGetUniformLocation(prog.programId(), "material.specular"), 1, &stone.specular.x );
-		glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"), stone.shininess);
 		
-
+		setMaterial(stone, state.prog);
 		glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, ourSaviour);
 		counter += picture.positions.size();
@@ -666,70 +690,99 @@ int main() try
 
 
 		for (int i = 0; i < benchCount; i++) {
-			glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &cushion.ambient.x );
-			glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &cushion.diffuse.x );
-			glUniform3fv(glGetUniformLocation(prog.programId(), "material.specular"), 1, &cushion.specular.x );
-			glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"), cushion.shininess);
+			setMaterial(cushion, state.prog);
 			counter += benchShapes[0];
 			glDrawArrays( GL_TRIANGLES, 0, counter);
 
-			glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &wood.ambient.x );
-			glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &wood.diffuse.x );
-			glUniform3fv(glGetUniformLocation(prog.programId(), "material.specular"), 1, &wood.specular.x );
-			glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"), wood.shininess);
+
+			setMaterial(wood, state.prog);
 			counter += benchShapes[1];
 			glDrawArrays( GL_TRIANGLES, 0, counter);
 			counter += benchShapes[2];
 			glDrawArrays( GL_TRIANGLES, 0, counter);
 
-			glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &cushion.ambient.x );
-			glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &cushion.diffuse.x );
-			glUniform3fv(glGetUniformLocation(prog.programId(), "material.specular"), 1, &cushion.specular.x );
-			glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"), cushion.shininess);
+
+			setMaterial(cushion, state.prog);
 			counter += benchShapes[3];
 			glDrawArrays( GL_TRIANGLES, 0, counter);
 
 
-			glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &wood.ambient.x );
-			glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &wood.diffuse.x );
-			glUniform3fv(glGetUniformLocation(prog.programId(), "material.specular"), 1, &wood.specular.x );
-			glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"), wood.shininess);
-
-			for (int l = 4; l < benchShapes.size()-2; l++) {
+			setMaterial(wood, state.prog);
+			for (int l = 4; l < benchShapes.size(); l++) {
 				counter += benchShapes[l];
 				glDrawArrays( GL_TRIANGLES, 0, counter);
 			}
-			glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &wood.ambient.x );
-			glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &wood.diffuse.x );
-			glUniform3fv(glGetUniformLocation(prog.programId(), "material.specular"), 1, &wood.specular.x );
-			glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"), wood.shininess);
-			counter += benchShapes[6];
-			glDrawArrays( GL_TRIANGLES, 0, counter);
-			counter += benchShapes[7];
-			glDrawArrays( GL_TRIANGLES, 0, counter);
-
-
 		}
 		
 		counter += roof.positions.size() * roofCount;
 		glDrawArrays( GL_TRIANGLES, 0, counter);
 
-
-		glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &uranium.ambient.x );
-		glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &uranium.diffuse.x );
-		glUniform3fv(glGetUniformLocation(prog.programId(), "material.specular"), 1, &uranium.specular.x );
-		glUniform3fv(glGetUniformLocation(prog.programId(), "material.emissive"), 1, &uranium.emissive.x );
-		glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"), uranium.shininess);
-
+		setMaterial(uranium, state.prog);
 		counter += plutonium.positions.size() * plutoniumCount;
 		glDrawArrays( GL_TRIANGLES, 0, counter);
 
+
+		setMaterial(shinyShiny, state.prog);
+		counter += shiny.positions.size() * shinyCount;
+		glDrawArrays( GL_TRIANGLES, 0, counter);
+
+
+
+		setMaterial(highDiffuse, state.prog);
+		counter += diffuseObject.positions.size() * diffuseCount;
+		glDrawArrays( GL_TRIANGLES, 0, counter);
+
+
+
+
+		setMaterial(brass, state.prog);
+		//glActiveTexture(GL_TEXTURE0);
+        //glBindTexture(GL_TEXTURE_2D, ourFish);
+		glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, ourSaviour);
+		counter += aquarium.positions.size() * aquariumCount;
+		glDrawArrays( GL_TRIANGLES, 0, counter);
+
+
+		//counter += window.positions.size() * windowCount;
+		//glDrawArrays( GL_TRIANGLES, 0, counter);
 		//glDrawElements( GL_TRIANGLES, vertexCount, GL_UNSIGNED_INT, NULL);
 		//glDrawElements( GL_TRIANGLES, vertexCount, GL_UNSIGNED_BYTE, NULL);
 		//glDrawElements( GL_TRIANGLES, vertexCount, GL_UNSIGNED_SHORT, NULL);
 
-
 		glBindVertexArray( 0 );
+
+		glBindVertexArray( transparentVao );
+
+		setMaterial(lampGlass, state.prog);
+		glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, NULL);
+		glUniform1f(glGetUniformLocation(prog.programId(), "material.opacity"), 0.6);
+		int transCounter = 0;
+
+		/*
+		for (std::map<float, Vec3f>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it) {
+			printf("LAMP");
+			glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "uProjCameraWorld"), 1, GL_TRUE, (projCameraWorld * make_translation(it->second)).v );
+			glDrawArrays( GL_TRIANGLES, transCounter, transCounter + lamp.positions.size());
+			transCounter += lamp.positions.size();
+		}*/
+		for (std::map<float, int>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it) {
+			//printf("%d/", it->second);
+			//glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "uProjCameraWorld"), 1, GL_TRUE, (projCameraWorld * make_translation(it->second)).v );
+			
+			//glDrawArrays( GL_TRIANGLES, lamp.positions.size() * it->second, lamp.positions.size());
+			glDrawArrays( GL_TRIANGLES, transPos[it->second], transparent[it->second].positions.size());
+			//transCounter += lamp.positions.size();
+		}
+		//printf("\nf\n");
+
+
+		//glColor3f(1.0, 1.0, 1.0);
+		//glVertex3f(0, 5, 15);
+		//glFlush();
+
+
 		glUseProgram( 0 );
 
 		OGL_CHECKPOINT_DEBUG();
@@ -925,6 +978,7 @@ namespace
 	}
 	unsigned int loadTexture(char const * path) {
 	
+		assert( path );
 		unsigned int textureID;
 		glGenTextures(1, &textureID);
 
@@ -951,13 +1005,14 @@ namespace
 
 		return textureID;
 	}
-	/*
-	void setMaterial(Material material, ShaderProgram prog) {
-		glUniform3fv(glGetUniformLocation(prog.programId(), "material.ambient"), 1, &material.ambient.x );
-		glUniform3fv(glGetUniformLocation(prog.programId(), "material.diffuse"), 1, &material.diffuse.x );
-		glUniform3fv(glGetUniformLocation(prog.programId(), "material.specular"), 1, &material.specular.x );
-		glUniform1f(glGetUniformLocation(prog.programId(), "material.shininess"), material.shininess);
-	}*/
+	
+	void setMaterial(Material material, ShaderProgram* prog) {
+		glUniform3fv(glGetUniformLocation(prog->programId(), "material.ambient"), 1, &material.ambient.x );
+		glUniform3fv(glGetUniformLocation(prog->programId(), "material.diffuse"), 1, &material.diffuse.x );
+		glUniform3fv(glGetUniformLocation(prog->programId(), "material.specular"), 1, &material.specular.x );
+		glUniform3fv(glGetUniformLocation(prog->programId(), "material.emissive"), 1, &material.emissive.x );
+		glUniform1f(glGetUniformLocation(prog->programId(), "material.shininess"), material.shininess);
+	}
 }
 
 

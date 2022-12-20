@@ -9,7 +9,7 @@ in vec2 v2fTexCoords;
 
 
 
-layout( location = 0 ) out vec3 oColor;
+layout( location = 0 ) out vec4 oColor;
 
 //uniform Light light;
 uniform mat4 uProjCameraWorld;
@@ -41,8 +41,9 @@ struct Material {
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;   
-    vec3 emissive;   
+    vec3 emissive;
     float shininess;
+    float opacity;
 }; 
 uniform Material material;
 
@@ -79,7 +80,7 @@ void main() {
     for(int i = 0; i < 6; i++)
         result += CalcPointLight(pointLights[i], normal, fragPos, viewDir);    
 
-    oColor = result;
+    oColor = vec4(result, material.opacity);
 }
 
 
