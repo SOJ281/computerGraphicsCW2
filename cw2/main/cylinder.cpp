@@ -8,14 +8,14 @@ SimpleMeshData make_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f aColor, 
 	std::vector<Vec2f> tex;
 	Mat33f const N = mat44_to_mat33( transpose(invert(aPreTransform)) );
 
-	float prevY = (float)cos( 0.f );
-	float prevZ = (float)sin( 0.f );
+	float prevY = cosf( 0.f );
+	float prevZ = sinf( 0.f );
 
 	for( std::size_t i = 0; i < aSubdivs; ++i ) {
 		float const angle = (i+1) / float(aSubdivs) * 2.f * 3.1415926f;
 
-		float y = (float)cos( angle );
-		float z = (float)sin( angle );
+		float y = cosf( angle );
+		float z = sinf( angle );
 
 		// Two triangles (= 3*2 positions) create one segment of the cylinder’s shell.
 		pos.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
@@ -26,9 +26,9 @@ SimpleMeshData make_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f aColor, 
 		norm.emplace_back( Vec3f{ 0.f, y, z } );
 		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
 
-		tex.emplace_back( Vec2f{ 0.f, (float)((i)/(float)aSubdivs)} );
-		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/(float)aSubdivs)} );
-		tex.emplace_back( Vec2f{ 1.f, (float)((i)/(float)aSubdivs)} );
+		tex.emplace_back( Vec2f{ 0.f, ((i)/(float)aSubdivs)} );
+		tex.emplace_back( Vec2f{ 0.f, ((i+1)/(float)aSubdivs)} );
+		tex.emplace_back( Vec2f{ 1.f, ((i)/(float)aSubdivs)} );
 
 
 
@@ -107,14 +107,14 @@ SimpleMeshData make_partial_building( bool aCapped, std::size_t aSubdivs, std::s
 	printf("PARTIAL\n");
 	Mat33f const N = mat44_to_mat33( transpose(invert(aPreTransform)) );
 
-	float prevY = (float)cos( 0.f );
-	float prevZ = (float)sin( 0.f );
+	float prevY = cosf( 0.f );
+	float prevZ = sinf( 0.f );
 
 	for( std::size_t i = 0; i < aSubdivs-cutOff; ++i ) {
 		float const angle = (i+1) / float(aSubdivs) * 2.f * 3.1415926f;
 
-		float y = (float)cos( angle );
-		float z = (float)sin( angle );
+		float y = cosf( angle );
+		float z = sinf( angle );
 
 		// 2x Two triangles (= 3*2 positions) create one segment of the cylinder’s shell.
 		//interior
@@ -187,7 +187,7 @@ SimpleMeshData make_partial_building( bool aCapped, std::size_t aSubdivs, std::s
 
 		pos.emplace_back( Vec3f{ 1.f, prevY, prevZ } );
 		pos.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
-		pos.emplace_back( Vec3f{ 1.f, prevY*1.1, prevZ*1.1 } );
+		pos.emplace_back( Vec3f{ 1.f, prevY*1.1f, prevZ*1.1f } );
 
 		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
 		norm.emplace_back( Vec3f{ 0.f, y, z } );
@@ -230,7 +230,7 @@ SimpleMeshData make_partial_building( bool aCapped, std::size_t aSubdivs, std::s
 
 
 			//interior
-			pos.emplace_back( Vec3f{ 1.f, prevY*1.1, prevZ*1.1 } );
+			pos.emplace_back( Vec3f{ 1.f, prevY*1.1f, prevZ*1.1f } );
 			pos.emplace_back( Vec3f{ 2.f, 0, 0  } );
 			pos.emplace_back( Vec3f{ 1.f, prevY, prevZ } );
 
@@ -245,11 +245,11 @@ SimpleMeshData make_partial_building( bool aCapped, std::size_t aSubdivs, std::s
 			//exterior
 			pos.emplace_back( Vec3f{ 2.f,  0, 0 } );
 			pos.emplace_back( Vec3f{ 2.f*1.1, 0, 0 } );
-			pos.emplace_back( Vec3f{ 1.f, prevY*1.1, prevZ*1.1 } );
+			pos.emplace_back( Vec3f{ 1.f, prevY*1.1f, prevZ*1.1f } );
 
-			norm.emplace_back( Vec3f{ 1.f, y*1.1, z*1.1  } );
+			norm.emplace_back( Vec3f{ 1.f, y*1.1f, z*1.1f  } );
 			norm.emplace_back( Vec3f{ 2.f*1.1, 0, 0 } );
-			norm.emplace_back( Vec3f{ 1.f, prevY*1.1, prevZ*1.1 } );
+			norm.emplace_back( Vec3f{ 1.f, prevY*1.1f, prevZ*1.1f } );
 
 			tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/aSubdivs)} );
 			tex.emplace_back( Vec2f{ 1.f, 0.f} );
@@ -281,7 +281,7 @@ SimpleMeshData make_partial_building( bool aCapped, std::size_t aSubdivs, std::s
 
 		pos.emplace_back( Vec3f{ 1.f, prevY, prevZ } );
 		pos.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
-		pos.emplace_back( Vec3f{ 1.f, prevY*1.1, prevZ*1.1 } );
+		pos.emplace_back( Vec3f{ 1.f, prevY*1.1f, prevZ*1.1f } );
 
 		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
 		norm.emplace_back( Vec3f{ 0.f, prevY, prevY } );
@@ -316,14 +316,14 @@ SimpleMeshData make_partial_cylinder( bool aCapped, std::size_t aSubdivs, std::s
 	printf("PARTIAL\n");
 	Mat33f const N = mat44_to_mat33( transpose(invert(aPreTransform)) );
 
-	float prevY = (float)cos( 0.f );
-	float prevZ = (float)sin( 0.f );
+	float prevY = cosf( 0.f );
+	float prevZ = sinf( 0.f );
 
 	for( std::size_t i = 0; i < aSubdivs-cutOff; ++i ) {
 		float const angle = (i+1) / float(aSubdivs) * 2.f * 3.1415926f;
 
-		float y = (float)cos( angle );
-		float z = (float)sin( angle );
+		float y = cosf( angle );
+		float z = sinf( angle );
 
 		// 2x Two triangles (= 3*2 positions) create one segment of the cylinder’s shell.
 		//interior
@@ -398,9 +398,9 @@ SimpleMeshData make_partial_cylinder( bool aCapped, std::size_t aSubdivs, std::s
 			tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)});
 
 			//exterior
-			pos.emplace_back( Vec3f{ 1.f, y*1.1, z*1.1 } );
+			pos.emplace_back( Vec3f{ 1.f, y*1.1f, z*1.1f } );
 			pos.emplace_back( Vec3f{ 1.1f, 0, 0 } );
-			pos.emplace_back( Vec3f{ 1.f, prevY*1.1, prevZ*1.1 } );
+			pos.emplace_back( Vec3f{ 1.f, prevY*1.1f, prevZ*1.1f } );
 
 			norm.emplace_back( Vec3f{ 1.f, y*1.1f, z*1.1f  } );
 			norm.emplace_back( Vec3f{ 2.f*1.1f, 0, 0 } );
@@ -438,14 +438,14 @@ SimpleMeshData make_partial_cylinder( bool aCapped, std::size_t aSubdivs, std::s
 SimpleMeshData make_div_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f aColor, Mat44f aPreTransform , std::size_t lSubdivs) {
 	std::vector<Vec3f> pos;
 
-	float prevY = (float)cos( 0.f );
-	float prevZ = (float)sin( 0.f );
+	float prevY = cosf( 0.f );
+	float prevZ = sinf( 0.f );
 
 	for( std::size_t i = 0; i < aSubdivs; ++i ) {
 		float const angle = (i+1) / float(aSubdivs) * 2.f * 3.1415926f;
 
-		float y = (float)cos( angle );
-		float z = (float)sin( angle );
+		float y = cosf( angle );
+		float z = sinf( angle );
 
 		// Two triangles (= 3*2 positions) create one segment of the cylinder’s shell.
 
@@ -493,23 +493,23 @@ SimpleMeshData make_div_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f aCol
 SimpleMeshData make_bent_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f aColor, Mat44f aPreTransform , std::size_t lSubdivs) {
 	std::vector<Vec3f> pos;
 
-	float prevY = (float)cos( 0.f );
-	float prevZ = (float)sin( 0.f );
+	float prevY = cosf( 0.f );
+	float prevZ = sinf( 0.f );
 
 	for( std::size_t i = 0; i < aSubdivs; ++i ) {
 		float const angle = (i+1) / float(aSubdivs) * 2.f * 3.1415926f;
 
-		float y = (float)cos( angle );
-		float z = (float)sin( angle );
+		float y = cosf( angle );
+		float z = sinf( angle );
 
 		// Two triangles (= 3*2 positions) create one segment of the cylinder’s shell.
 
-		float prevX = (float)cos( 0.f );
-		float pY = (float)sin( 0.f );
+		float prevX = cosf( 0.f );
+		float pY = sinf( 0.f );
 		for( float i = 1; i <= lSubdivs; ++i ) {
 			float ang = i/float(lSubdivs) * 3.1415926f;
-			float x = (float)cos( ang );
-			float ny = (float)sin( ang );
+			float x = cosf( ang );
+			float ny = sinf( ang );
 			printf("%6.4lf,", x);
 			//printf("%6.4lf,", prevdp);
 			pos.emplace_back( Vec3f{ prevX, prevY + pY, prevZ } );
