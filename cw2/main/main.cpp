@@ -346,7 +346,7 @@ int main() try
 	
 	//TEST DOOOR
 	auto door = make_cube(Vec3f{ 0.05f, 0.05f, 0.05f }, make_scaling(2.f, 2.f, 2.f));
-	chapel.emplace_back(make_change(door, make_translation( {-1.f, 2.f, 0.f} )));
+	chapel.emplace_back(make_change(door, make_translation( {0.f, 0.f, 0.f} )));
 	int doorCount = 1;
 
 	int vertexCount = floor.positions.size() + frontWall.positions.size() * wallBits + sideWall.positions.size() * sideWallBits 
@@ -626,10 +626,12 @@ int main() try
 		setMaterial(wood, state.prog);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, NULL);
-		model2world = make_rotation_y(angle);
+		//Rotate door around door frame
+		model2world = make_translation({ 0.f, 3.f, 5.f }) * make_rotation_y(angle);
 		projCameraWorld = projCameraWorld * model2world;
 		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "uProjCameraWorld"), 1, GL_TRUE, projCameraWorld.v);
 		glDrawArrays(GL_TRIANGLES, counter, door.positions.size());
+		
 		counter += door.positions.size() * doorCount;
 
 		model2world = kIdentity44f;
