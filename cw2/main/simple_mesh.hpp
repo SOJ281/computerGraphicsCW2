@@ -18,7 +18,6 @@ struct SimpleMeshData
 	std::vector<Vec3f> normals;
 	std::vector<Vec2f> texCoords;
 	std::vector<uint32_t> indices;
-	//std::vector<std::uint32_t> indices;
 };
 
 SimpleMeshData concatenate( SimpleMeshData, SimpleMeshData const& );
