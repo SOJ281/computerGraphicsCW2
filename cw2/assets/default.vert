@@ -16,6 +16,18 @@ uniform mat4 rotation;
 uniform mat4 rotateDoor;
 uniform vec3 point;
 
+struct vertexControls {
+    float animating;
+
+};
+
+uniform vertexControls controls;
+
+uniform mat4 scaleMat;
+uniform mat4 rotateMat;
+uniform vec3 translateV;
+
+
 //layout( location = 5 ) uniform vec3 uLightPos;
 
 out vec3 v2fNormal;
@@ -28,12 +40,22 @@ vec3 translate(vec3 transV, vec3 vertex);
 vec3 rotateByPoint(mat4 rotV, vec3 pointBy, vec3 vertex);
 vec3 rotate(mat4 rotV, vec3 vertex);
 vec3 scaling(mat4 scalV, vec3 vertex);
+vec3 animation(vec3 vertex);
 
 void main() {
 
     //vec4 t = rotation * vec4( iPosition - point, 1.0 );
 	//vec3 tPosition = vec3( t.x, t.y, t.z ) + point;
+
 	vec3 tPosition = rotateByPoint(rotateDoor, point, iPosition);
+    if (controls.animating > 0)  {
+        tPosition = translate(translateV, tPosition);
+        tPosition = rotateByPoint(rotateMat, point, tPosition);
+        tPosition = scaling(scaleMat, tPosition);
+    }
+    //tPosition = translate(translateV, tPosition);
+        //tPosition = animation(tPosition);
+    //tPosition = translateV + tPosition;
 
     vec3 tNormal = rotate(rotateDoor, iNormal);
 
@@ -49,6 +71,16 @@ void main() {
 
     //lightDistance = length(uLightPos - iPosition);
 }
+
+vec3 animation(vec3 vertex) {
+    vec3 tPosition = rotateByPoint(rotateMat, point, vertex);
+    tPosition = translate(translateV, tPosition);
+    tPosition = scaling(scaleMat, tPosition);
+
+
+    return tPosition;
+}
+
 
 
 //Mapping simple transformations so I don't have to use brain

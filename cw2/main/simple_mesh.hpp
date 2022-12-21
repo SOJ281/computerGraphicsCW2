@@ -19,6 +19,7 @@ struct SimpleMeshData
 	std::vector<Vec2f> texCoords;
 	std::vector<uint32_t> indices;
 	//std::vector<std::uint32_t> indices;
+	Vec3f centre;
 };
 
 SimpleMeshData concatenate( SimpleMeshData, SimpleMeshData const& );
@@ -29,6 +30,7 @@ std::vector<Vec3f> calcNorms(std::vector<Vec3f> pos);
 GLuint create_vao( SimpleMeshData const& );
 GLuint create_vaoM( SimpleMeshData* , int number);
 SimpleMeshData make_cube(Vec3f aColor, Mat44f aPreTransform );
+SimpleMeshData make_sphere(std::size_t aSubdivs, Mat44f aPreTransform );
 SimpleMeshData invert_normals(SimpleMeshData aM);
 SimpleMeshData make_frame(Vec3f aColor, Mat44f aPreTransform );
 

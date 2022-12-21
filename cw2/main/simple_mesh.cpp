@@ -6,6 +6,7 @@ SimpleMeshData concatenate( SimpleMeshData aM, SimpleMeshData const& aN )
 {
 	aM.positions.insert( aM.positions.end(), aN.positions.begin(), aN.positions.end() );
 	aM.normals.insert( aM.normals.end(), aN.normals.begin(), aN.normals.end() );
+	aM.texCoords.insert( aM.texCoords.end(), aN.texCoords.begin(), aN.texCoords.end() );
 	//aM.indices.insert( aM.indices.end(), aN.indices.begin(), aN.indices.end() );
 	return aM;
 }
@@ -240,8 +241,8 @@ SimpleMeshData make_cube(Vec3f aColor, Mat44f aPreTransform ) {
 		//norm.emplace_back( Vec3f{ kCubePositions[i], kCubePositions[i+1], kCubePositions[i+2] } );
 		//norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
 	}
-	norm = calcNorms(pos);
-	/*
+	//norm = calcNorms(pos);
+	
 	for (int i = 0; i < pos.size(); i+=3) {
 		Vec3f U = pos[i+1] - pos[i];
 		Vec3f V = pos[i+2] - pos[i];
@@ -252,7 +253,7 @@ SimpleMeshData make_cube(Vec3f aColor, Mat44f aPreTransform ) {
 		norm.emplace_back( Vec3f{ normX, normY, normZ } );
 		norm.emplace_back( Vec3f{ normX, normY, normZ } );
 	}
-	*/
+	
 
 
 	for (int i = 0; i < 6; i++) {
@@ -338,43 +339,64 @@ SimpleMeshData make_frame(Vec3f aColor, Mat44f aPreTransform ) {
 	return SimpleMeshData{ std::move(pos), std::move(norm), std::move(tex) };
 }
 
-/*
-SimpleMeshData make_roof(Vec3f aColor, Mat44f aPreTransform ) {
+SimpleMeshData make_sphere(std::size_t aSubdivs, Mat44f aPreTransform ) {
+	/*
 	std::vector<Vec3f> pos;
 	std::vector<Vec3f> norm;
 	std::vector<Vec2f> tex;
+
 	Mat33f const N = mat44_to_mat33( transpose(invert(aPreTransform)) );
 
-	int originSize = sizeof(kCubePositions)/sizeof(kCubePositions[0]);
 
-	for (int i = 0; i < originSize; i+=3) {
-		pos.emplace_back( Vec3f{ 1, 0, 1 } );
-		pos.emplace_back( Vec3f{ -1, 0, 1 } );
-		pos.emplace_back( Vec3f{ 0, 1, 0 } );
+    float radius = 3.f;
+    float sectorCount = 12.f;
+    float stackCount = 12.f;
 
-		pos.emplace_back( Vec3f{ 1, 0, 1 } );
-		pos.emplace_back( Vec3f{ 1, 0, -1 } );
-		pos.emplace_back( Vec3f{ 0, 1, 0 } );
-		
-		//norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
-	}
+    float x, y, z, xy;                              // vertex position
+    float nx, ny, nz, lengthInv = 1.0f / radius;    // vertex normal
+    float s, t;                                     // vertex texCoord
+    float PI = 3.14;
 
-	for (int i = 0; i < 6; i++) {
-		tex.emplace_back( Vec2f{ 0.f, 0.f} );
-		tex.emplace_back( Vec2f{ 1.f, 0.f} );
-		tex.emplace_back( Vec2f{ 1.f, 1.f} );
+    float sectorStep = 2 * PI / sectorCount;
+    float stackStep = PI / stackCount;
+    float sectorAngle, stackAngle;
 
-		tex.emplace_back( Vec2f{ 0.f, 0.f} );
-		tex.emplace_back( Vec2f{ 1.f, 1.f} );
-		tex.emplace_back( Vec2f{ 0.f, 1.f} );
-	}
-	printf("\nCube:\n");
-	printf("pos.positions.size() = %ld\n", pos.size());
-	printf("tex.positions.size() = %ld\n", tex.size());
+    for(int i = 0; i <= stackCount; ++i) {
+        stackAngle = PI / 2 - i * stackStep;        // starting from pi/2 to -pi/2
+        xy = radius * cosf(stackAngle);             // r * cos(u)
+        z = radius * sinf(stackAngle);              // r * sin(u)
 
+        // add (sectorCount+1) vertices per stack
+        // the first and last vertices have same position and normal, but different tex coords
+        for(int j = 0; j <= sectorCount; ++j)
+        {
+            sectorAngle = j * sectorStep;           // starting from 0 to 2pi
+
+            // vertex position (x, y, z)
+            x = xy * cosf(sectorAngle);             // r * cos(u) * cos(v)
+            y = xy * sinf(sectorAngle);             // r * cos(u) * sin(v)
+            pos.emplace_back( Vec3f{ x, y, z } );
+
+            // normalized vertex normal (nx, ny, nz)
+            nx = x * lengthInv;
+            ny = y * lengthInv;
+            nz = z * lengthInv;
+            norm.emplace_back( Vec3f{ nx, ny, nz } );
+
+            // vertex tex coord (s, t) range between [0, 1]
+            s = (float)j / sectorCount;
+            t = (float)i / stackCount;
+            tex.emplace_back( Vec2f{s, t} );
+        }
+    }
+
+    //norm = calcNorms(pos);
 	for( auto& n : norm ) {
+		//Vec4f p4{ n.x, n.y, n.z, 1.f };
 		Vec3f t = N * n;
+		//t /= t.w;
 		n = t;
+		//n = { 1, 1, 1};
 	}
 
 	for( auto& p : pos ) {
@@ -383,10 +405,125 @@ SimpleMeshData make_roof(Vec3f aColor, Mat44f aPreTransform ) {
 		t /= t.w;
 		p = Vec3f{ t.x, t.y, t.z };
 	}
-	std::vector col( pos.size(), aColor );
+
+
+
+    return SimpleMeshData{ std::move(pos), std::move(norm), std::move(tex) };*/
+
+	int lSubdivs = 10;
+std::vector<Vec3f> pos;
+	std::vector<Vec3f> norm;
+	std::vector<Vec2f> tex;
+
+	float prevX = (float)cos( 0.f );
+	//float prevY = (float)sin( 0.f );
+	float prevY = (float)cos( 0.f );
+	float prevZ = (float)sin(0.f);
+	float PI = 3.1415926f;
+
+	float stackStep = PI / aSubdivs;
+	float sectorStep = 2.f * PI / lSubdivs;
+	Mat33f const N = mat44_to_mat33( transpose(invert(aPreTransform)) );
+
+
+	for( std::size_t i = 0; i < aSubdivs; ++i ) {
+		float const angle = (float(i) / float(aSubdivs)) * 2.f * 3.1415926f;
+
+		//float angle = PI / 2 - i * stackStep;        // starting from pi/2 to -pi/2
+
+		//float const angle = (i+1) / float(aSubdivs) * 2.f * 3.1415926f;
+		//float const angle = 3.1415926f/2 - ((i * 3.1415926f) / float(aSubdivs));
+
+		float x = (float)cos( angle ) ;
+		float y = (float)cos( angle ) ;
+		float z = (float)sin( angle );
+
+		// Two triangles (= 3*2 positions) create one segment of the cylinder’s shell.
+
+		for( float l = 0; l <= lSubdivs; ++l ) {
+			//float dp = i/(lSubdivs);
+			//printf("%6.4lf,", dp);
+			//float sectorAngle = 2.f*3.1415926f*((float)l/((float)lSubdivs));
+			float sectorAngle = 3.1415926f/2.f - l*sectorStep;
+			float nx = x*(float)cosf(sectorAngle);
+			float ny = y*(float)sinf(sectorAngle);
+
+			float nprevX = prevX*(float)cosf(sectorAngle);
+			float nprevY = prevY*(float)sinf(sectorAngle);
+
+			
+			//float z = (float)sin(sectorAngle);
+
+			printf("nprevX%6.4lf\n", nprevX);
+			printf("nx%6.4lf\n\n", nx);
+
+			pos.emplace_back( Vec3f{ nprevX, nprevY, prevZ } );
+			pos.emplace_back( Vec3f{ nprevX, ny, z } );
+			pos.emplace_back( Vec3f{ nx, nprevY, prevZ } );
+
+
+
+
+
+			pos.emplace_back( Vec3f{ nprevX, ny, z } );
+			pos.emplace_back( Vec3f{ nx, ny, z } );
+			pos.emplace_back( Vec3f{ nx, nprevY, prevZ } );
+
+			/*
+			pos.emplace_back( Vec3f{ prevdp, prevY, prevZ } );
+			pos.emplace_back( Vec3f{ prevdp, y, z } );
+			pos.emplace_back( Vec3f{ dp, prevY, prevZ } );
+
+			norm.emplace_back( Vec3f{ prevdp, prevY, prevZ } );
+			norm.emplace_back( Vec3f{ prevdp, y, z } );
+			norm.emplace_back( Vec3f{ dp, prevY, prevZ } );
+
+			tex.emplace_back( Vec2f{ prevdp, (float)((i)/(float)aSubdivs)} );
+			tex.emplace_back( Vec2f{ prevdp, (float)((i+1)/(float)aSubdivs)} );
+			tex.emplace_back( Vec2f{ prevdp, (float)((i)/(float)aSubdivs)} );
+
+
+
+
+
+			pos.emplace_back( Vec3f{ prevdp, y, z } );
+			pos.emplace_back( Vec3f{ dp, y, z } );
+			pos.emplace_back( Vec3f{ dp, prevY, prevZ } );
+
+			norm.emplace_back( Vec3f{ prevdp, y, z } );
+			norm.emplace_back( Vec3f{ dp, y, z } );
+			norm.emplace_back( Vec3f{ dp, prevY, prevZ } );
+
+			tex.emplace_back( Vec2f{ prevdp, (float)((i+1)/(float)aSubdivs)} );
+			tex.emplace_back( Vec2f{ dp, (float)((i+1)/(float)aSubdivs)} );
+			tex.emplace_back( Vec2f{ dp, (float)((i)/(float)aSubdivs)} );
+			*/
+
+		}
+
+		prevX = x;
+		prevY = y;
+		prevZ = z;
+	}
+	//norm = calcNorms(pos);
+	for( auto& n : norm ) {
+		//Vec4f p4{ n.x, n.y, n.z, 1.f };
+		Vec3f t = N * n;
+		//t /= t.w;
+		n = t;
+		//n = { 1, 1, 1};
+	}
+
+	for( auto& p : pos ) {
+		Vec4f p4{ p.x, p.y, p.z, 1.f };
+		Vec4f t = aPreTransform * p4;
+		t /= t.w;
+		p = Vec3f{ t.x, t.y, t.z };
+	}
 	return SimpleMeshData{ std::move(pos), std::move(norm), std::move(tex) };
+
+
 }
-*/
 
 SimpleMeshData make_door(Vec3f aColor, Mat44f aPreTransform ) {
 	std::vector<Vec3f> pos;

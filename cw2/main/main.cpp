@@ -18,6 +18,7 @@
 
 #include "defaults.hpp"
 #include "cylinder.hpp"
+#include "jellyfish.hpp"
 //#include "loadcustom.hpp"
 #include "loadTexture.hpp"
 #include "loadobj.hpp"
@@ -45,6 +46,7 @@ namespace
 	struct State_
 	{
 		ShaderProgram* prog;
+		ShaderProgram* moveProg;
 
 		struct CamCtrl_
 		{
@@ -205,6 +207,12 @@ int main() try
 	glViewport( 0, 0, iwidth, iheight );
 
 	// Load shader program
+	ShaderProgram moveProg({
+		{ GL_VERTEX_SHADER, "assets/movement.vert" },
+		{ GL_FRAGMENT_SHADER, "assets/movement.frag" }
+		});
+	state.moveProg = &moveProg;
+
 	ShaderProgram prog({
 		{ GL_VERTEX_SHADER, "assets/default.vert" },
 		{ GL_FRAGMENT_SHADER, "assets/default.frag" }
@@ -214,6 +222,8 @@ int main() try
 	// Animation state
 	auto last = Clock::now();
 	float angle = 0.f;
+	float headAngle = 0.f;
+	float legAngle = 0.f;
 
 	// Other initialization & loading
 	OGL_CHECKPOINT_ALWAYS();
@@ -243,7 +253,7 @@ int main() try
 		.4f
 	};
 	Material lampGlass = {
-		Vec3f{0.4f, 0.4f, 0.4f},
+		Vec3f{0.6f, 0.6f, 0.6f},
 		Vec3f{0.780392f, 0.568627f, 0.113725f},
 		Vec3f{0.6f, 0.6f, 0.6f},
 		Vec3f{0.05f, 0.05f, 0.05f}, //Most objects don't emit light
@@ -297,10 +307,12 @@ int main() try
 	};
 
 	unsigned int ourSaviour = loadTexture("assets/markus.png");
-	unsigned int ourBlank = loadTexture("assets/Solid_white.png");
+	//unsigned int ourBlank = loadTexture("assets/Solid_white.png");
 	unsigned int ourVoid = loadTexture("assets/Solid_black.png");
+	unsigned int ourCross = loadTexture("assets/Cross.png");
+	unsigned int eyeball = loadTexture("assets/eyeBall.png");
 	//unsigned int ourFish = loadTexture("assets/nong-v-wcMK9KKbmms-unsplash.jpg");
-	unsigned int ourFish = loadTexture("assets/fishTransparent.png");
+	//unsigned int ourFish = loadTexture("assets/fishTransparent.png");
 	
 
 
@@ -335,7 +347,7 @@ int main() try
 	auto pillar = make_cylinder( true, 18, {.1f, 0, .1f}, make_scaling( .75f, 10.f, .75f ) * make_rotation_z( 3.141592f / 2.f ));
 
 	auto lamp = make_cylinder( true, 18, {.1f, .1f, .1f}, make_scaling( .4f, 2.f, .4f ) * make_rotation_z( 3.141592f / 2.f ));
-	lamp = invert_normals(lamp);
+	//lamp = invert_normals(lamp);
 	struct PointLight {
 			Vec3f position;
 			float constant;
@@ -367,11 +379,13 @@ int main() try
 			transPos.emplace_back(transPos[transPos.size()-1] + lamp.positions.size());
 		}
 
+	
 	int windowCount = 4;
-	auto stainWindow = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_rotation_y( 3.141592f) * make_scaling( .1f, 5.f, 5.f ));//so 48 meter
+	//auto stainWindow = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_rotation_y( 3.141592f) * make_scaling( .1f, 5.f, 4.5f ));//so 48 meter
+	auto stainWindow = make_frame( Vec3f{0.05f, 0.05f, 0.05f}, make_rotation_y( 3.141592f/2) * make_scaling( 5.f, 5.f, 4.5f ));//so 48 meter
 	for (float i = 0; i < 2; i++)
 		for (float l = 0; l < 2; l++) {
-			Vec3f thisLoc = Vec3f{ 29.f - 58.f*l, 15.f, 21.f + 18.f * i };
+			Vec3f thisLoc = Vec3f{ 29.f - 58.f*l, 15.f, 20.5f + 19.f * i };
 			transparent.emplace_back(make_change(stainWindow, make_translation( thisLoc) ));
 			transLocs.emplace_back(thisLoc);
 			transPos.emplace_back(transPos[transPos.size()-1] + stainWindow.positions.size());
@@ -384,7 +398,7 @@ int main() try
 	int pictures = 1;
 
 	auto backroom = make_partial_building( true, 6, 1, {.02f, .02f, .02f},  make_rotation_y( -3.141592f / 3.f )* make_rotation_z( 3.141592f / 2.f ));
-	chapel.emplace_back(make_change(backroom, make_translation( { 0.f, 0.f, 86.8f })*  make_scaling( 60.f, 40.f, 40.f ) ));
+	chapel.emplace_back(make_change(backroom, make_translation( { 0.f, 0.f, 86.8f })*  make_scaling( 54.f, 40.f, 40.f ) ));
 	//chapel.emplace_back(backroom);
 	int backrooms = 1;
 
@@ -415,8 +429,9 @@ int main() try
 	int plutoniumCount = 1;
 
 
+	//auto shiny = make_sphere( 46, make_scaling( 2.f, 2.f, 2.f ));//so 48 meter
 	auto shiny = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_scaling( 2.f, 2.f, 2.f ));//so 48 meter
-	chapel.emplace_back(make_change(shiny, make_translation( {0.f, 59.f, 0.f }) ));
+	chapel.emplace_back(make_change(shiny, make_translation( {0.f, 16.f, 0.f }) ));
 	int shinyCount = 1;
 
 
@@ -434,6 +449,16 @@ int main() try
 	//auto window = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_scaling( 2.f, 2.f, 2.f ));//so 48 meter
 	//chapel.emplace_back(make_change(window, make_translation( {0.f, 0.f, 0.f }) ));
 	//int windowCount = 1;
+	auto mammoth = load_wavefront_obj( "assets/woolly-mammoth-skeleton-obj/woolly-mammoth-skeleton.obj" );
+	auto mammothShapes = getDimensions( "assets/woolly-mammoth-skeleton-obj/woolly-mammoth-skeleton.obj" );
+	mammoth = make_change(mammoth, make_scaling( 0.007f, 0.007f, 0.007f ));
+	//mammoth = make_change(mammoth, make_translation( {0.f, 2.f, 0.f }));
+	float lowest = 5.f;
+	for (int i = 0; i < mammoth.positions.size(); i++)
+		if (lowest > mammoth.positions[i].y)
+			lowest = mammoth.positions[i].y;
+	mammoth = (make_change(mammoth,  make_rotation_y( -3.141592f / 2.f )));
+	chapel.emplace_back(make_change(mammoth, make_translation( {25.f, -lowest-.01f, 84.f })));
 
 
 	int vertexCount = floor.positions.size() + frontWall.positions.size() * wallBits + sideWall.positions.size() * sideWallBits 
@@ -441,17 +466,24 @@ int main() try
 	float sunXloc = -1.f;
 	printf("\nNINJA\n");
 	GLuint vao = create_vaoM(&chapel[0], 1 + wallBits + sideWallBits + rows*2+ pictures + backrooms 
-	+ benchCount + roofCount + plutoniumCount + shinyCount + diffuseCount + aquariumCount);
-	//GLuint transparentVao = create_vaoM(&transparent[0], lampCount);
+	+ benchCount + roofCount + plutoniumCount + shinyCount + diffuseCount + aquariumCount + 1);
 	GLuint transparentVao = create_vaoM(&transparent[0], transparent.size());
 	printf("\nNINJA2\n");
+
 
 	std::vector<SimpleMeshData> movingObjects;
 
 	auto doorA= make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_translation( Vec3f{ 1.f, 0.f, 0.f} ));//so 48 meter
 	doorA = make_change(doorA, make_scaling( 2.f, 4.f, 0.1f ) );
 	movingObjects.emplace_back(make_change(doorA, make_translation( {-4.f, 2.f, 5.f }) ));
-	GLuint movingVao = create_vaoM(&movingObjects[0], 1);
+
+	auto jelly = make_jellyfish( 16, make_translation( Vec3f{ 0.f, 10.f, -20.f} ));//so 48 meter
+	//doorA = make_change(doorA, make_scaling( 2.f, 4.f, 0.1f ) );
+	movingObjects.emplace_back(jelly.data);
+	//int headSize = jelly;
+	//int coreSize = make_cylinder( true, 18, {.5f, 0.5f, .5f}, make_rotation_z( 3.141592f / 2.f )).positions.size();
+
+	GLuint movingVao = create_vaoM(&movingObjects[0], 2);
 
 
 
@@ -495,6 +527,15 @@ int main() try
 		angle += dt * kPi_ * 0.3f;
 		if (angle >= 2.f * kPi_)
 			angle -= 2.f * kPi_;
+
+		headAngle += dt * kPi_ * 0.15f;
+		if (headAngle >= kPi_)
+			headAngle -= kPi_;
+
+
+		legAngle += dt * kPi_ * 0.05f;
+		if (legAngle >= kPi_/3.f)
+			legAngle -= kPi_/3.f;
 
 		
 
@@ -564,12 +605,16 @@ int main() try
 		sunXloc += .01f;
 		if (sunXloc > .99f)
 			sunXloc = -1.f;
-		Vec3f lightDir = normalize( Vec3f{ 0.f, 1.f, -1.f } );
+		Vec3f lightDir = normalize( Vec3f{ 0.f, 0.5f, -1.f } );
 
-		Vec3f lightPos = Vec3f{ 0.f, -1.f, 1.f };
+		//Vec3f lightPos = Vec3f{ 0.f, -1.f, 1.f };
 
+
+		//Animation stuff
 		Vec3f doorHinge = Vec3f{-4.f, 2.f, 5.f };
 		Vec3f noHinge = Vec3f{0.f, 0.f, 0.f };
+
+		
 
 		
 		std::map<float, int> sorted;
@@ -595,7 +640,13 @@ int main() try
 
 		//Draw frame
 		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+
 		glUseProgram( prog.programId() );
+
+		glUniform1f(glGetUniformLocation(prog.programId(), "controls.animating"), 0 );
+		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "rotation"),1, GL_TRUE, kIdentity44f.v);
+		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "rotateMat"),1, GL_TRUE, kIdentity44f.v);
+		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "scaleMat"),1, GL_TRUE, kIdentity44f.v);
 
 
 		glUniform1i(glGetUniformLocation(prog.programId(), "texture.diffuse"), 0); //lightDir uLightDir
@@ -605,20 +656,17 @@ int main() try
 		glUniform3fv(glGetUniformLocation(prog.programId(), "uLightDir"), 1, &lightDir.x ); //lightDir uLightDir
 		glUniform3f( glGetUniformLocation(prog.programId(), "uLightDiffuse"), .6f, .6f, .6f ); //lightDiffuse
 		glUniform3f( glGetUniformLocation(prog.programId(), "uSceneAmbient"), 0.1f, 0.1f, 0.1f ); //uSceneAmbient
-		glUniform3f( glGetUniformLocation(prog.programId(), "uSpecular"), 0.5f, 0.5f, 0.5f ); //uSceneAmbient
+		glUniform3f( glGetUniformLocation(prog.programId(), "uSpecular"), .5f, .4f, .05f ); //uSceneAmbient
 		//printf("normalMatrix: (%f, %f, %f)\n", state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z);
 		glUniform3f(glGetUniformLocation(prog.programId(), "viewPos"), state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z ); //uSceneAmbient
 
 		//glUniform3f( glGetUniformLocation(prog.programId(), "rotateDoor"), make_rotation_x( 0 ) );
 
 
-		 make_rotation_x( angle );
 		
 		#include <string>
 		for (int i = 0; i < 6; i++) {
-
 			std::string number = std::to_string(i);
-
 			glUniform3fv(glGetUniformLocation(prog.programId(), ("pointLights["+number+"].position").c_str()), 1, &PointLightData[i].position.x ); //lightDir uLightDir
 			glUniform1f(glGetUniformLocation(prog.programId(), ("pointLights["+number+"].constant").c_str()), PointLightData[i].constant ); //lightDir uLightDir
 			glUniform1f(glGetUniformLocation(prog.programId(), ("pointLights["+number+"].linear").c_str()), PointLightData[i].linear ); //lightDir uLightDir
@@ -632,7 +680,6 @@ int main() try
 
 		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "uProjCameraWorld"), 1, GL_TRUE, projCameraWorld.v );
 		glUniformMatrix3fv(glGetUniformLocation(prog.programId(), "uNormalMatrix"),1, GL_TRUE, normalMatrix.v);
-		Mat44f blankMatrix = make_translation( { 1.f, 1.f, 1.f } );
 		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "rotation"),1, GL_TRUE, make_rotation_x( 0 ).v);
 		glUniform3fv(glGetUniformLocation(prog.programId(), "point"),1, &noHinge.x);
 
@@ -687,7 +734,7 @@ int main() try
 		//glDrawArrays( GL_TRIANGLES, 0, counter);
 		//printf("\nbencSize = %ld", benches.positions.size());
 		int bCoun = 0;
-		for (int l = 0; l < benchShapes.size(); l++) {
+		for (int l = 0; l < (int)benchShapes.size(); l++) {
 			bCoun += benchShapes[l];
 		}
 		//printf("\nbCoun = %d", bCoun);
@@ -712,7 +759,7 @@ int main() try
 
 
 			setMaterial(wood, state.prog);
-			for (int l = 4; l < benchShapes.size(); l++) {
+			for (int l = 4; l < (int)benchShapes.size(); l++) {
 				counter += benchShapes[l];
 				glDrawArrays( GL_TRIANGLES, 0, counter);
 			}
@@ -726,7 +773,8 @@ int main() try
 		glDrawArrays( GL_TRIANGLES, 0, counter);
 
 
-		setMaterial(shinyShiny, state.prog);
+		//setMaterial(shinyShiny, state.prog);
+		setMaterial(brass, state.prog);
 		counter += shiny.positions.size() * shinyCount;
 		glDrawArrays( GL_TRIANGLES, 0, counter);
 
@@ -745,55 +793,113 @@ int main() try
 		counter += aquarium.positions.size() * aquariumCount;
 		glDrawArrays( GL_TRIANGLES, 0, counter);
 
+		counter += mammoth.positions.size()*backrooms;
+		glDrawArrays( GL_TRIANGLES, 0, counter);
 
-		//counter += window.positions.size() * windowCount;
-		//glDrawArrays( GL_TRIANGLES, 0, counter);
-		//glDrawElements( GL_TRIANGLES, vertexCount, GL_UNSIGNED_INT, NULL);
-		//glDrawElements( GL_TRIANGLES, vertexCount, GL_UNSIGNED_BYTE, NULL);
-		//glDrawElements( GL_TRIANGLES, vertexCount, GL_UNSIGNED_SHORT, NULL);
 
-		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "rotation"),1, GL_TRUE, make_rotation_y( angle).v);
-		glUniform3fv(glGetUniformLocation(prog.programId(), "point"),1, &doorHinge.x);
+		//Second shader
+		glUseProgram( 0 );
+		glUseProgram( moveProg.programId() );
+
+		glUniform3fv(glGetUniformLocation(moveProg.programId(), "uLightDir"), 1, &lightDir.x ); //lightDir uLightDir
+		glUniform3f( glGetUniformLocation(moveProg.programId(), "uLightDiffuse"), .6f, .6f, .6f ); //lightDiffuse
+		glUniform3f( glGetUniformLocation(moveProg.programId(), "uSceneAmbient"), 0.1f, 0.1f, 0.1f ); //uSceneAmbient
+		glUniform3f( glGetUniformLocation(moveProg.programId(), "uSpecular"), 0.5f, 0.5f, 0.5f ); //uSceneAmbient
+		glUniform3f(glGetUniformLocation(moveProg.programId(), "viewPos"), state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z ); //uSceneAmbient
+
+		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "uProjCameraWorld"), 1, GL_TRUE, projCameraWorld.v );
+		glUniformMatrix3fv(glGetUniformLocation(moveProg.programId(), "uNormalMatrix"),1, GL_TRUE, normalMatrix.v);
+
+
+		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotation"),1, GL_TRUE, kIdentity44f.v);
+
+		setMaterial(brass, state.moveProg);
+		glUniform1f(glGetUniformLocation(moveProg.programId(), "material.opacity"), 1);
+
+		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotation"),1, GL_TRUE, make_rotation_y( angle).v);
+		glUniform3fv(glGetUniformLocation(moveProg.programId(), "point"),1, &doorHinge.x);
 
 
 		glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, NULL);
 		glBindVertexArray( movingVao );
-		glDrawArrays( GL_TRIANGLES, 0, doorA.positions.size());
+		int currentMLoc = 0;
+
+		//glDrawArrays( GL_TRIANGLES, currentMLoc, doorA.positions.size());
+		currentMLoc += doorA.positions.size();
 
 
-		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "rotation"),1, GL_TRUE, make_rotation_y(0).v);
+		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotateMat"),1, GL_TRUE, make_rotation_y(0).v);
+		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "scaleMat"),1, GL_TRUE, make_rotation_y(0).v);
+		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotationLegX"),1, GL_TRUE, kIdentity44f.v);
+		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotationLegZ"),1, GL_TRUE, kIdentity44f.v);
+
+		Vec3f bounce = Vec3f{0.f, 3.f *(float)sin(angle), 0.f };
+		glUniform3fv(glGetUniformLocation(moveProg.programId(), "translateV"),1, &bounce.x);
+
+
+		glUniform3fv(glGetUniformLocation(moveProg.programId(), "centre"),1, &jelly.centreData.head.x);
+		//printf("projection: (%f, %f, %f)\n", jelly.centreData.head.x, jelly.centreData.head.y, jelly.centreData.head.z);
+
+
+		//head
+		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "scaleMat"),1, GL_TRUE, make_scaling((sin(headAngle)+1), (sin(headAngle)+1), (sin(headAngle)+1)).v);
+		glDrawArrays( GL_TRIANGLES, currentMLoc, jelly.centreData.headCount);
+		currentMLoc += jelly.centreData.headCount;
+		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "scaleMat"),1, GL_TRUE, kIdentity44f.v);
+
+		glDrawArrays( GL_TRIANGLES, currentMLoc, jelly.centreData.bodyCount);
+		currentMLoc += jelly.centreData.bodyCount;
+
+
+		for (int i = 0; i < jelly.centreData.legNo; i++) {
+			//float dzdx = (jelly.centreData.legs[i].z - jelly.centreData.head.z) / (jelly.centreData.legs[i].x - jelly.centreData.head.x);
+			float lX = legAngle * (jelly.centreData.legs[i].x - jelly.centreData.head.x)/10;
+			float lZ = legAngle * (jelly.centreData.legs[i].z - jelly.centreData.head.z)/10;
+			//Vec3f currentPointBy = jelly.centreData.legTop[i];
+			glUniform3fv(glGetUniformLocation(moveProg.programId(), "legCentre"),1, &jelly.centreData.legs[i].x);
+			glUniform3fv(glGetUniformLocation(moveProg.programId(), "point"),1, &jelly.centreData.legTop[i].x);
+			for (int l = 0; l < 10; l++) {
+				glUniform1f(glGetUniformLocation(moveProg.programId(), "legSeg"), 1);
+				glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotationLegX"),1, GL_TRUE, make_rotation_z(lX).v);
+				glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotationLegZ"),1, GL_TRUE, make_rotation_x(-lZ).v);
+				glDrawArrays( GL_TRIANGLES, currentMLoc + (jelly.centreData.legCount/10)*l, (jelly.centreData.legCount/10));
+			}
+			currentMLoc += jelly.centreData.legCount;
+		}
+		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotationLegX"),1, GL_TRUE, kIdentity44f.v);
+		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotationLegZ"),1, GL_TRUE, kIdentity44f.v);
+
+
+
+		Vec3f blankTranslation = Vec3f{0.f, 0.f, 0.f };
+		glUniform3fv(glGetUniformLocation(moveProg.programId(), "translateV"),1, &(blankTranslation).x);
+
+
+		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotation"),1, GL_TRUE, make_rotation_y(0).v);
 		glBindVertexArray( 0 );
 
 		glBindVertexArray( transparentVao );
 
+
+
+
+
+
+		glUseProgram( 0 );
+		glUseProgram( prog.programId() );
+
 		setMaterial(lampGlass, state.prog);
 		glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, NULL);
-		glUniform1f(glGetUniformLocation(prog.programId(), "material.opacity"), 0.6);
-		int transCounter = 0;
+		glUniform1f(glGetUniformLocation(prog.programId(), "material.opacity"), 0.4);
 
-		/*
-		for (std::map<float, Vec3f>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it) {
-			printf("LAMP");
-			glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "uProjCameraWorld"), 1, GL_TRUE, (projCameraWorld * make_translation(it->second)).v );
-			glDrawArrays( GL_TRIANGLES, transCounter, transCounter + lamp.positions.size());
-			transCounter += lamp.positions.size();
-		}*/
 		for (std::map<float, int>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it) {
-			//printf("%d/", it->second);
-			//glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "uProjCameraWorld"), 1, GL_TRUE, (projCameraWorld * make_translation(it->second)).v );
-			
-			//glDrawArrays( GL_TRIANGLES, lamp.positions.size() * it->second, lamp.positions.size());
+			glActiveTexture(GL_TEXTURE0);
+        	glBindTexture(GL_TEXTURE_2D, ourCross);
 			glDrawArrays( GL_TRIANGLES, transPos[it->second], transparent[it->second].positions.size());
-			//transCounter += lamp.positions.size();
 		}
 		//printf("\nf\n");
-
-
-		//glColor3f(1.0, 1.0, 1.0);
-		//glVertex3f(0, 5, 15);
-		//glFlush();
 
 
 		glUseProgram( 0 );
@@ -806,6 +912,7 @@ int main() try
 
 	// Cleanup.
 	state.prog = nullptr;
+	state.moveProg = nullptr;
 	//TODO: additional cleanup
 	
 	return 0;
