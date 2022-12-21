@@ -268,55 +268,6 @@ SimpleMeshData make_cube(Vec3f aColor, Mat44f aPreTransform ) {
 	std::vector col( pos.size(), aColor );
 	return SimpleMeshData{ std::move(pos), std::move(norm), std::move(tex) };
 }
-/*
-SimpleMeshData make_roof(Vec3f aColor, Mat44f aPreTransform ) {
-	std::vector<Vec3f> pos;
-	std::vector<Vec3f> norm;
-	std::vector<Vec2f> tex;
-	Mat33f const N = mat44_to_mat33( transpose(invert(aPreTransform)) );
-
-	int originSize = sizeof(kCubePositions)/sizeof(kCubePositions[0]);
-
-	for (int i = 0; i < originSize; i+=3) {
-		pos.emplace_back( Vec3f{ 1, 0, 1 } );
-		pos.emplace_back( Vec3f{ -1, 0, 1 } );
-		pos.emplace_back( Vec3f{ 0, 1, 0 } );
-
-		pos.emplace_back( Vec3f{ 1, 0, 1 } );
-		pos.emplace_back( Vec3f{ 1, 0, -1 } );
-		pos.emplace_back( Vec3f{ 0, 1, 0 } );
-		
-		//norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
-	}
-
-	for (int i = 0; i < 6; i++) {
-		tex.emplace_back( Vec2f{ 0.f, 0.f} );
-		tex.emplace_back( Vec2f{ 1.f, 0.f} );
-		tex.emplace_back( Vec2f{ 1.f, 1.f} );
-
-		tex.emplace_back( Vec2f{ 0.f, 0.f} );
-		tex.emplace_back( Vec2f{ 1.f, 1.f} );
-		tex.emplace_back( Vec2f{ 0.f, 1.f} );
-	}
-	printf("\nCube:\n");
-	printf("pos.positions.size() = %ld\n", pos.size());
-	printf("tex.positions.size() = %ld\n", tex.size());
-
-	for( auto& n : norm ) {
-		Vec3f t = N * n;
-		n = t;
-	}
-
-	for( auto& p : pos ) {
-		Vec4f p4{ p.x, p.y, p.z, 1.f };
-		Vec4f t = aPreTransform * p4;
-		t /= t.w;
-		p = Vec3f{ t.x, t.y, t.z };
-	}
-	std::vector col( pos.size(), aColor );
-	return SimpleMeshData{ std::move(pos), std::move(norm), std::move(tex) };
-}
-*/
 
 SimpleMeshData make_door(Vec3f aColor, Mat44f aPreTransform ) {
 	std::vector<Vec3f> pos;
@@ -324,11 +275,11 @@ SimpleMeshData make_door(Vec3f aColor, Mat44f aPreTransform ) {
 	std::vector<Vec2f> tex;
 	Mat33f const N = mat44_to_mat33( transpose(invert(aPreTransform)) );
 
-	int originSize = sizeof(kCubePositions)/sizeof(kCubePositions[0]);
+	int originSize = sizeof(kDoorPositions)/sizeof(kDoorPositions[0]);
 	//float rightKCube[sizeof(kCubePositions)/sizeof(kCubePositions[0]) * 2];// = new float[kCubePositions.length];
 	for (int i = 0; i < originSize; i+=3) {
-		pos.emplace_back( Vec3f{ kCubePositions[i], kCubePositions[i+1], kCubePositions[i+2] } );
-		norm.emplace_back( Vec3f{ kCubePositions[i], kCubePositions[i+1], kCubePositions[i+2] } );
+		pos.emplace_back( Vec3f{ kDoorPositions[i], kDoorPositions[i+1], kDoorPositions[i+2] } );
+		norm.emplace_back( Vec3f{ kDoorPositions[i], kDoorPositions[i+1], kDoorPositions[i+2] } );
 	}
 
 	for( auto& n : norm ) {

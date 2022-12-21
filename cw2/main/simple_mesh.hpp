@@ -27,6 +27,7 @@ SimpleMeshData make_change( SimpleMeshData, Mat44f );
 GLuint create_vao( SimpleMeshData const& );
 GLuint create_vaoM( SimpleMeshData* , int number);
 SimpleMeshData make_cube(Vec3f aColor, Mat44f aPreTransform );
+SimpleMeshData make_door(Vec3f aColor, Mat44f aPreTransform);
 SimpleMeshData invert_normals(SimpleMeshData aM) ;
 
 
