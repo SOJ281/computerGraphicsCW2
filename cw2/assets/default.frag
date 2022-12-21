@@ -64,7 +64,7 @@ void main() {
     float nDotL = max( 0.0, dot(normal, uLightDir) );
 
 
-    vec3 reflectDir = reflect(-uLightDir, normal);  
+    vec3 reflectDir = reflect(-uLightDir, normal); 
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess * 100);
     //vec3 specular = uSpecular * (spec * material.specular); 
 
@@ -73,6 +73,7 @@ void main() {
     vec3 result = uSceneAmbient * (material.ambient + vec3(texture(textures.diffuse, v2fTexCoords)));//Ambient
     result += nDotL * uLightDiffuse * (material.diffuse + vec3(texture(textures.diffuse, v2fTexCoords)));//diffuse
     //result += specular * spec * ( material.specular + vec3(texture(textures.specular, v2fTexCoords)));//specular
+    //result += uSpecular * spec * ( material.specular + vec3(texture(textures.specular, v2fTexCoords)));//specular
     result += uSpecular * spec * ( material.specular + vec3(texture(textures.specular, v2fTexCoords)));//specular
     result += material.emissive;//emissive
 
