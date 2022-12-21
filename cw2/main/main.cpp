@@ -38,8 +38,9 @@ namespace
 	constexpr float kMovementModPos_ = 5.f;
 	constexpr float kMouseSensitivity_ = 0.01f; // radians per pixel
 
-	constexpr float kAniModPos_ = 1.5f;
-	constexpr float kAniModNeg_ = 0.5;
+	//Animation speed modifiers
+	constexpr float kAniModPos_ = 2.f;
+	constexpr float kAniModNeg_ = 0.5f;
 
 	struct State_
 	{
@@ -61,6 +62,7 @@ namespace
 
 		} camControl;
 
+		//Animation control struct.
 		struct AnimCtrl_
 		{
 			bool pause, speedUp, slowDown;
@@ -84,6 +86,8 @@ namespace
 	void glfw_callback_key_( GLFWwindow*, int, int, int, int );
 	void glfw_callback_motion_(GLFWwindow*, double, double);
 	void movementControl(State_ &state, float dt);
+	
+	float doorControl(State_& state, float angle, std::chrono::steady_clock::time_point &last, bool& increase);
 	
 	struct GLFWCleanupHelper
 	{
@@ -604,37 +608,10 @@ int main() try
 		setMaterial(wood, state.prog);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, NULL);
-		//Rotate door around door frame
-		float aniDt = std::chrono::duration_cast<Secondsf>(now - aniStop).count();
-		float aniSpeedMod = 1.f;
-		if (state.aniControl.speedUp == true)
-			aniSpeedMod = kAniModPos_;
-		else if (state.aniControl.slowDown == true)
-			aniSpeedMod = kAniModNeg_;
-		else
-			aniSpeedMod = 1.f;
 
-		if (state.aniControl.pause == false)
-		{
-			aniStop = now;
-			if (doorAngle > kPi_ / 2 && increase == true)
-				increase = false;
-			else if (doorAngle < 0 && increase == false)
-				increase = true;
-			switch (increase)
-			{
-			case true:
-				doorAngle += aniDt * kPi_ * 0.3f * aniSpeedMod;
-				break;
-			case false:
-				doorAngle -= aniDt * kPi_ * 0.3f * aniSpeedMod;
-			}
-		}
-		else
-		{
-			aniStop = now;
-		}
 
+		//Calculates the angle of rotation for the door
+		doorAngle = doorControl(state, doorAngle, aniStop, increase);
 		model2world = make_translation({ -4.f, 0.f, 5.f }) * make_rotation_y(doorAngle) * make_translation({ 4.f, 0.f, -5.f });
 		projCameraWorld = projCameraWorld * model2world;
 		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "uProjCameraWorld"), 1, GL_TRUE, projCameraWorld.v);
@@ -920,6 +897,47 @@ namespace
 		else if (state.camControl.down) {
 			state.camControl.cameraPos.y -= (kMovementPerSecond_ + speedChange) * dt;
 		}
+	}
+
+	//Function for door control.
+	float doorControl(State_& state, float angle, std::chrono::steady_clock::time_point& last, bool& increase)
+	{
+		auto now = Clock::now();
+		//Rotate door around door frame by 90 degrees.
+		float aniDt = std::chrono::duration_cast<Secondsf>(now - last).count();
+		float aniSpeedMod = 1.f;
+		//Speed modifiers
+		if (state.aniControl.speedUp == true)
+			aniSpeedMod = kAniModPos_;
+		else if (state.aniControl.slowDown == true)
+			aniSpeedMod = kAniModNeg_;
+		else
+			aniSpeedMod = 1.f;
+
+		//Checks whether to pause the animation.
+		if (state.aniControl.pause == false)
+		{
+			last = now;
+			//Calculates whether the door is in closing or opening state.
+			if (angle > kPi_ / 2 && increase == true)
+				increase = false;
+			else if (angle < 0 && increase == false)
+				increase = true;
+			//Rotates positive if opening, negative if closing.
+			switch (increase)
+			{
+			case true:
+				angle += aniDt * kPi_ * 0.3f * aniSpeedMod;
+				break;
+			case false:
+				angle -= aniDt * kPi_ * 0.3f * aniSpeedMod;
+			}
+		}
+		else
+		{
+			last = now;
+		}
+		return angle;
 	}
 
 	unsigned int loadTexture(char const * path) {
