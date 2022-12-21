@@ -531,11 +531,11 @@ SimpleMeshData make_door(Vec3f aColor, Mat44f aPreTransform ) {
 	std::vector<Vec2f> tex;
 	Mat33f const N = mat44_to_mat33( transpose(invert(aPreTransform)) );
 
-	int originSize = sizeof(kCubePositions)/sizeof(kCubePositions[0]);
+	int originSize = sizeof(kDoorPositions)/sizeof(kDoorPositions[0]);
 	//float rightKCube[sizeof(kCubePositions)/sizeof(kCubePositions[0]) * 2];// = new float[kCubePositions.length];
 	for (int i = 0; i < originSize; i+=3) {
-		pos.emplace_back( Vec3f{ kCubePositions[i], kCubePositions[i+1], kCubePositions[i+2] } );
-		norm.emplace_back( Vec3f{ kCubePositions[i], kCubePositions[i+1], kCubePositions[i+2] } );
+		pos.emplace_back( Vec3f{ kDoorPositions[i], kDoorPositions[i+1], kDoorPositions[i+2] } );
+		norm.emplace_back( Vec3f{ kDoorPositions[i], kDoorPositions[i+1], kDoorPositions[i+2] } );
 	}
 
 	for( auto& n : norm ) {

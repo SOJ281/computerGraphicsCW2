@@ -1,7 +1,7 @@
 ﻿################################################################################
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
-
+/cw2/_build_*
 /cw2/.vs/COMP3811-cw2
 /cw2/_build_
 /cw2/lib
@@ -20,3 +20,4 @@
 *.log
 *.obj
 *.make
+/cw2/bin

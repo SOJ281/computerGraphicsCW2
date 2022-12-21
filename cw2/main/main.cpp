@@ -22,6 +22,7 @@
 //#include "loadcustom.hpp"
 #include "loadTexture.hpp"
 #include "loadobj.hpp"
+#include "materials.hpp"
 #include <string>
 #include <cstring>
 #include <stb_image.h>
@@ -42,7 +43,10 @@ namespace
 	constexpr float kMovementModPos_ = 5.f;
 	constexpr float kMouseSensitivity_ = 0.01f; // radians per pixel
 
-	
+	//Animation speed modifiers
+	constexpr float kAniModPos_ = 2.f;
+	constexpr float kAniModNeg_ = 0.5f;
+
 	struct State_
 	{
 		ShaderProgram* prog;
@@ -63,6 +67,12 @@ namespace
 			Vec3f cameraUp = { 0.f, 1.f, 0.f };
 
 		} camControl;
+
+		//Animation control struct.
+		struct AnimCtrl_
+		{
+			bool pause, speedUp, slowDown;
+		}aniControl;
 	};
 
 	//Point light struct
@@ -73,22 +83,18 @@ namespace
 		float quadratic;
 		Vec3f ambient;
 		Vec3f diffuse;
-	};
-	struct Material {
-		Vec3f ambient;
-		Vec3f diffuse;
 		Vec3f specular;
-		Vec3f emissive;   
-		float shininess;
-	}; 
+	};
 
 	void setMaterial(Material material, ShaderProgram* prog);
 
 	void glfw_callback_error_( int, char const* );
-
 	void glfw_callback_key_( GLFWwindow*, int, int, int, int );
 	void glfw_callback_motion_(GLFWwindow*, double, double);
-
+	void movementControl(State_ &state, float dt);
+	
+	float doorControl(State_& state, float angle, std::chrono::steady_clock::time_point &last, bool& increase);
+	
 	struct GLFWCleanupHelper
 	{
 		~GLFWCleanupHelper();
@@ -98,6 +104,11 @@ namespace
 		~GLFWWindowDeleter();
 		GLFWwindow* window;
 	};
+}
+
+extern "C"
+{
+	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
 
 int main() try
@@ -184,7 +195,7 @@ int main() try
 	OGL_CHECKPOINT_ALWAYS();
 
 	// Global GL setup goes here
-	//glEnable( GL_CULL_FACE );
+	glEnable( GL_CULL_FACE );
 	glEnable( GL_DEPTH_TEST );
 	//glDepthMask(GL_TRUE);
 	glEnable(GL_BLEND);
@@ -222,8 +233,9 @@ int main() try
 	// Animation state
 	auto last = Clock::now();
 	float angle = 0.f;
-	float headAngle = 0.f;
-	float legAngle = 0.f;
+	auto aniStop = Clock::now();
+	float doorAngle = 0.f;
+	bool increase = true;
 
 	// Other initialization & loading
 	OGL_CHECKPOINT_ALWAYS();
@@ -314,8 +326,8 @@ int main() try
 	//unsigned int ourFish = loadTexture("assets/nong-v-wcMK9KKbmms-unsplash.jpg");
 	//unsigned int ourFish = loadTexture("assets/fishTransparent.png");
 	
-
-
+	
+	
 	std::vector<SimpleMeshData> chapel;
 	std::vector<SimpleMeshData> transparent;
 	std::vector<Vec3f> transLocs;
@@ -419,7 +431,7 @@ int main() try
 
 	auto roof = make_partial_cylinder( true, 124, 62, {.02f, .02f, .02f},  make_scaling( 1.f, 1.f, 1.f ));
 	roof = make_change(roof, make_rotation_x( -3.141592f / 2.f )* make_rotation_z( 3.141592f / 2.f ) );
-	roof = make_change(roof, make_scaling( 27.f, 20.f, 50.f ) );
+	roof = make_change(roof, make_scaling( 28.f, 20.f, 50.f ) );
 	roof = make_change(roof, make_translation( {0.f, 30.f, 55.f }) );
 	chapel.emplace_back(roof);
 	int roofCount = 1;
@@ -466,7 +478,8 @@ int main() try
 	float sunXloc = -1.f;
 	printf("\nNINJA\n");
 	GLuint vao = create_vaoM(&chapel[0], 1 + wallBits + sideWallBits + rows*2+ pictures + backrooms 
-	+ benchCount + roofCount + plutoniumCount + shinyCount + diffuseCount + aquariumCount + 1);
+	+ benchCount + roofCount + plutoniumCount + shinyCount + diffuseCount + aquariumCount + doorCount);
+	//GLuint transparentVao = create_vaoM(&transparent[0], lampCount);
 	GLuint transparentVao = create_vaoM(&transparent[0], transparent.size());
 	printf("\nNINJA2\n");
 
@@ -520,7 +533,6 @@ int main() try
 		}
 
 		// Update state of camera
-		// TODO: Make movement based on current camera orientation.
 		auto const now = Clock::now();
 		float dt = std::chrono::duration_cast<Secondsf>(now - last).count();
 		last = now;
@@ -581,25 +593,13 @@ int main() try
 		Mat44f projection = make_perspective_projection(
 			60.f * 3.1415926f / 180.f,
 			fbwidth/float(fbheight),
-			0.1f, 100.0f
+			0.1f, 200.0f
 		);
 		projection = projection*Rx*Ry;
-
-		//door = make_change( door, make_rotation_y(angle) );
 
 
 		Mat44f projCameraWorld = projection * world2camera * model2world;
 		Mat33f normalMatrix = mat44_to_mat33( transpose(invert(model2world)) );
-		/*
-		for (int i = 0; i< 4; i++)
-			printf("projection: (%f, %f, %f, %f)\n", projection.v[i*4],projection.v[i*4+1],projection.v[i*4+2],projection.v[i*4+3]);
-		printf("\n");
-		for (int i = 0; i< 4; i++)
-			printf("projCameraWorld: (%f, %f, %f, %f)\n", projCameraWorld.v[i*4],projCameraWorld.v[i*4+1],projCameraWorld.v[i*4+2],projCameraWorld.v[i*4+3]);
-
-		for (int i = 0; i< 3; i++)
-			printf("normalMatrix: (%f, %f, %f)\n", projCameraWorld.v[i*3],projCameraWorld.v[i*3+1],projCameraWorld.v[i*3+2]);
-		*/
 
 
 		sunXloc += .01f;
@@ -683,49 +683,46 @@ int main() try
 		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "rotation"),1, GL_TRUE, make_rotation_x( 0 ).v);
 		glUniform3fv(glGetUniformLocation(prog.programId(), "point"),1, &noHinge.x);
 
-		
-		//glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+
 		glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 		
 		glBindVertexArray( vao );
 		glUniform1f(glGetUniformLocation(prog.programId(), "material.opacity"), 1);
-		//glUniform1f(glGetUniformLocation(prog.programId(), "material.opacity"), 0);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, NULL);
 
 		setMaterial(stone, state.prog);
-		int counter = floor.positions.size();
-		glDrawArrays( GL_TRIANGLES, 0, counter);
-		
+		int counter = 0;
+		glDrawArrays( GL_TRIANGLES, counter, floor.positions.size());
+		counter += floor.positions.size();
 
 
+		glDrawArrays( GL_TRIANGLES, counter, frontWall.positions.size() * wallBits);
 		counter += frontWall.positions.size() * wallBits;
-		glDrawArrays( GL_TRIANGLES, 0, counter);
 
+		glDrawArrays( GL_TRIANGLES, counter, sideWall.positions.size() * sideWallBits);
 		counter += sideWall.positions.size() * sideWallBits;
-		glDrawArrays( GL_TRIANGLES, 0, counter);
 
 		setMaterial(brass, state.prog);
-		counter += pillar.positions.size() * rows*2;
-		glDrawArrays( GL_TRIANGLES, 0, counter);
+		glDrawArrays( GL_TRIANGLES, counter, pillar.positions.size() * rows * 2);
+		counter += pillar.positions.size() * rows * 2;
 
 
 		
 		setMaterial(stone, state.prog);
 		glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, ourSaviour);
+		glDrawArrays( GL_TRIANGLES, counter, picture.positions.size());
 		counter += picture.positions.size();
-		glDrawArrays( GL_TRIANGLES, 0, counter);
 
 
 
 
 		glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, NULL);
+		glDrawArrays( GL_TRIANGLES, counter, backroom.positions.size() * backrooms);
 		counter += backroom.positions.size()*backrooms;
-		glDrawArrays( GL_TRIANGLES, 0, counter);
-
 		
 
 		glActiveTexture(GL_TEXTURE0);
@@ -765,24 +762,22 @@ int main() try
 			}
 		}
 		
+		glDrawArrays( GL_TRIANGLES, counter, roof.positions.size()* roofCount);
 		counter += roof.positions.size() * roofCount;
-		glDrawArrays( GL_TRIANGLES, 0, counter);
 
 		setMaterial(uranium, state.prog);
+		glDrawArrays( GL_TRIANGLES, counter, plutonium.positions.size()* plutoniumCount);
 		counter += plutonium.positions.size() * plutoniumCount;
-		glDrawArrays( GL_TRIANGLES, 0, counter);
 
 
-		//setMaterial(shinyShiny, state.prog);
-		setMaterial(brass, state.prog);
+		setMaterial(shinyShiny, state.prog);
+		glDrawArrays( GL_TRIANGLES, counter, shiny.positions.size()* shinyCount);
 		counter += shiny.positions.size() * shinyCount;
-		glDrawArrays( GL_TRIANGLES, 0, counter);
-
 
 
 		setMaterial(highDiffuse, state.prog);
+		glDrawArrays( GL_TRIANGLES, counter, diffuseObject.positions.size() * diffuseCount);
 		counter += diffuseObject.positions.size() * diffuseCount;
-		glDrawArrays( GL_TRIANGLES, 0, counter);
 
 
 
@@ -790,8 +785,26 @@ int main() try
 		setMaterial(brass, state.prog);
 		glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, ourSaviour);
+		glDrawArrays( GL_TRIANGLES, counter, aquarium.positions.size() * aquariumCount);
 		counter += aquarium.positions.size() * aquariumCount;
-		glDrawArrays( GL_TRIANGLES, 0, counter);
+
+
+		setMaterial(wood, state.prog);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, NULL);
+
+
+		//Calculates the angle of rotation for the door
+		doorAngle = doorControl(state, doorAngle, aniStop, increase);
+		model2world = make_translation({ -4.f, 0.f, 5.f }) * make_rotation_y(doorAngle) * make_translation({ 4.f, 0.f, -5.f });
+		projCameraWorld = projCameraWorld * model2world;
+		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "uProjCameraWorld"), 1, GL_TRUE, projCameraWorld.v);
+		glDrawArrays(GL_TRIANGLES, counter, door.positions.size());
+		counter += door.positions.size() * doorCount;
+
+		model2world = kIdentity44f;
+		projCameraWorld = projection * world2camera * model2world;
+		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "uProjCameraWorld"), 1, GL_TRUE, projCameraWorld.v);
 
 		counter += mammoth.positions.size()*backrooms;
 		glDrawArrays( GL_TRIANGLES, 0, counter);
@@ -899,7 +912,6 @@ int main() try
         	glBindTexture(GL_TEXTURE_2D, ourCross);
 			glDrawArrays( GL_TRIANGLES, transPos[it->second], transparent[it->second].positions.size());
 		}
-		//printf("\nf\n");
 
 
 		glUseProgram( 0 );
@@ -925,17 +937,6 @@ catch( std::exception const& eErr )
 	return 1;
 }
 
-/*
-char * converter(std::string str) {
-	int n = str.length();
-	char arr[n + 1]; 
-	for (int x = 0; x < sizeof(arr); x++) { 
-		arr[x] = str[x]; 
-		cout << arr[x]; 
-	} 
-	return arr;
-}
-*/
 
 //GLFW key inputs for movement and camera rotation.
 namespace
@@ -952,36 +953,36 @@ namespace
 			glfwSetWindowShouldClose( aWindow, GLFW_TRUE );
 			return;
 		}
-		if( auto* state = static_cast<State_*>(glfwGetWindowUserPointer( aWindow )) )
+		if (auto* state = static_cast<State_*>(glfwGetWindowUserPointer(aWindow)))
 		{
 			// R-key reloads shaders.
-			if( GLFW_KEY_R == aKey && GLFW_PRESS == aAction )
+			if (GLFW_KEY_R == aKey && GLFW_PRESS == aAction)
 			{
-				if( state->prog )
+				if (state->prog)
 				{
 					try
 					{
 						state->prog->reload();
-						std::fprintf( stderr, "Shaders reloaded and recompiled.\n" );
+						std::fprintf(stderr, "Shaders reloaded and recompiled.\n");
 					}
-					catch( std::exception const& eErr )
+					catch (std::exception const& eErr)
 					{
-						std::fprintf( stderr, "Error when reloading shader:\n" );
-						std::fprintf( stderr, "%s\n", eErr.what() );
-						std::fprintf( stderr, "Keeping old shader.\n" );
+						std::fprintf(stderr, "Error when reloading shader:\n");
+						std::fprintf(stderr, "%s\n", eErr.what());
+						std::fprintf(stderr, "Keeping old shader.\n");
 					}
 				}
 			}
 
 			// Space toggles camera
-			if( GLFW_KEY_SPACE == aKey && GLFW_PRESS == aAction )
+			if (GLFW_KEY_SPACE == aKey && GLFW_PRESS == aAction)
 			{
 				state->camControl.cameraActive = !state->camControl.cameraActive;
 
-				if( state->camControl.cameraActive )
-					glfwSetInputMode( aWindow, GLFW_CURSOR, GLFW_CURSOR_HIDDEN );
+				if (state->camControl.cameraActive)
+					glfwSetInputMode(aWindow, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 				else
-					glfwSetInputMode( aWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL );
+					glfwSetInputMode(aWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 			}
 
 			// Camera controls if camera is active
@@ -1032,12 +1033,12 @@ namespace
 					else if (GLFW_RELEASE == aAction)
 						state->camControl.down = false;
 				}
-				
+
 				//Speed modifiers Lshift and Lctrl
 				if (GLFW_KEY_LEFT_SHIFT == aKey)
 				{
 					if (GLFW_PRESS == aAction)
-						state->camControl.actionSpeedUp= true;
+						state->camControl.actionSpeedUp = true;
 					else if (GLFW_RELEASE == aAction)
 						state->camControl.actionSpeedUp = false;
 				}
@@ -1064,8 +1065,37 @@ namespace
 				state->camControl.backward = false;
 				state->camControl.left = false;
 				state->camControl.right = false;
+				state->camControl.up = false;
+				state->camControl.down = false;
 				state->camControl.actionSpeedUp = false;
 				state->camControl.actionSlowDown = false;
+			}
+
+			//Animation controls.
+			if (state->camControl.cameraActive)
+			{
+				//Speedup, pause/play, slowdown
+				if (GLFW_KEY_J == aKey)
+				{
+					if (GLFW_PRESS == aAction && state->aniControl.speedUp == false)
+						state->aniControl.speedUp = true;
+					else if (GLFW_PRESS == aAction && state->aniControl.speedUp == true)
+						state->aniControl.speedUp = false;
+				}
+				if (GLFW_KEY_K == aKey)
+				{
+					if (GLFW_PRESS == aAction && state->aniControl.pause == false)
+						state->aniControl.pause = true;
+					else if (GLFW_PRESS == aAction && state->aniControl.pause == true)
+						state->aniControl.pause = false;
+				}
+				if (GLFW_KEY_L == aKey)
+				{
+					if (GLFW_PRESS == aAction && state->aniControl.slowDown == false)
+						state->aniControl.slowDown = true;
+					else if (GLFW_PRESS == aAction && state->aniControl.slowDown == true)
+						state->aniControl.slowDown = false;
+				}
 			}
 		}
 	}
@@ -1103,13 +1133,109 @@ namespace
 			state->camControl.lastY = float(aY);
 		}
 	}
+
+	void movementControl(State_ &state, float dt){
+		//Camera speed decision.
+		float speedChange = 0;
+		if (state.camControl.actionSpeedUp)
+			speedChange = kMovementModPos_;
+		else if (state.camControl.actionSlowDown)
+			speedChange = -kMovementModNeg_;
+		else
+			speedChange = 0;
+		// Update camera state based on keyboard input.
+		//Forward, backward
+		if (state.camControl.forward) {
+			state.camControl.cameraPos += state.camControl.cameraFront * (kMovementPerSecond_ + speedChange) * dt;
+		}
+		else if (state.camControl.backward) {
+			state.camControl.cameraPos -= state.camControl.cameraFront * (kMovementPerSecond_ + speedChange) * dt;
+		}
+		//Left, right
+		if (state.camControl.left) {
+			state.camControl.cameraPos -= normalize(cross(state.camControl.cameraFront, state.camControl.cameraUp)) * (kMovementPerSecond_ + speedChange) * dt;
+		}
+		else if (state.camControl.right) {
+			state.camControl.cameraPos += normalize(cross(state.camControl.cameraFront, state.camControl.cameraUp)) * (kMovementPerSecond_ + speedChange) * dt;
+		}
+		//Up, down
+		if (state.camControl.up) {
+			state.camControl.cameraPos.y += (kMovementPerSecond_ + speedChange) * dt;
+		}
+		else if (state.camControl.down) {
+			state.camControl.cameraPos.y -= (kMovementPerSecond_ + speedChange) * dt;
+		}
+	}
+
+	//Function for door control.
+	float doorControl(State_& state, float angle, std::chrono::steady_clock::time_point& last, bool& increase)
+	{
+		auto now = Clock::now();
+		//Rotate door around door frame by 90 degrees.
+		float aniDt = std::chrono::duration_cast<Secondsf>(now - last).count();
+		float aniSpeedMod = 1.f;
+		//Speed modifiers
+		if (state.aniControl.speedUp == true)
+			aniSpeedMod = kAniModPos_;
+		else if (state.aniControl.slowDown == true)
+			aniSpeedMod = kAniModNeg_;
+		else
+			aniSpeedMod = 1.f;
+
+		//Checks whether to pause the animation.
+		if (state.aniControl.pause == false)
+		{
+			last = now;
+			//Calculates whether the door is in closing or opening state.
+			if (angle > kPi_ / 2 && increase == true)
+				increase = false;
+			else if (angle < 0 && increase == false)
+				increase = true;
+			//Rotates positive if opening, negative if closing.
+			switch (increase)
+			{
+			case true:
+				angle += aniDt * kPi_ * 0.3f * aniSpeedMod;
+				break;
+			case false:
+				angle -= aniDt * kPi_ * 0.3f * aniSpeedMod;
+			}
+		}
+		else
+		{
+			last = now;
+		}
+		return angle;
+	}
+
+	unsigned int loadTexture(char const * path) {
 	
-	void setMaterial(Material material, ShaderProgram* prog) {
-		glUniform3fv(glGetUniformLocation(prog->programId(), "material.ambient"), 1, &material.ambient.x );
-		glUniform3fv(glGetUniformLocation(prog->programId(), "material.diffuse"), 1, &material.diffuse.x );
-		glUniform3fv(glGetUniformLocation(prog->programId(), "material.specular"), 1, &material.specular.x );
-		glUniform3fv(glGetUniformLocation(prog->programId(), "material.emissive"), 1, &material.emissive.x );
-		glUniform1f(glGetUniformLocation(prog->programId(), "material.shininess"), material.shininess);
+		assert( path );
+		unsigned int textureID;
+		glGenTextures(1, &textureID);
+
+		int width, height, nrComponents;
+		unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
+		GLenum format = 0;
+		if (nrComponents == 1)
+			format = GL_RED;
+		else if (nrComponents == 3)
+			format = GL_RGB;
+		else if (nrComponents == 4)
+			format = GL_RGBA;
+
+		glBindTexture(GL_TEXTURE_2D, textureID);
+		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		stbi_image_free(data);
+
+		return textureID;
 	}
 }
 
