@@ -38,7 +38,9 @@ namespace
 	constexpr float kMovementModPos_ = 5.f;
 	constexpr float kMouseSensitivity_ = 0.01f; // radians per pixel
 
-	
+	constexpr float kAniModPos_ = 1.5f;
+	constexpr float kAniModNeg_ = 0.5;
+
 	struct State_
 	{
 		ShaderProgram* prog;
@@ -61,7 +63,7 @@ namespace
 
 		struct AnimCtrl_
 		{
-			bool pausePlay, speedUp, slowDown;
+			bool pause, speedUp, slowDown;
 		}aniControl;
 	};
 
@@ -81,7 +83,8 @@ namespace
 	void glfw_callback_error_( int, char const* );
 	void glfw_callback_key_( GLFWwindow*, int, int, int, int );
 	void glfw_callback_motion_(GLFWwindow*, double, double);
-
+	void movementControl(State_ &state, float dt);
+	
 	struct GLFWCleanupHelper
 	{
 		~GLFWCleanupHelper();
@@ -91,6 +94,11 @@ namespace
 		~GLFWWindowDeleter();
 		GLFWwindow* window;
 	};
+}
+
+extern "C"
+{
+	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
 
 int main() try
@@ -209,6 +217,9 @@ int main() try
 	// Animation state
 	auto last = Clock::now();
 	float angle = 0.f;
+	auto aniStop = Clock::now();
+	float doorAngle = 0.f;
+	bool increase = true;
 
 	// Other initialization & loading
 	OGL_CHECKPOINT_ALWAYS();
@@ -345,8 +356,8 @@ int main() try
 	//int windowCount = 1;
 	
 	//TEST DOOOR
-	auto door = make_cube(Vec3f{ 0.05f, 0.05f, 0.05f }, make_scaling(2.f, 2.f, 2.f));
-	chapel.emplace_back(make_change(door, make_translation( {0.f, 0.f, 0.f} )));
+	auto door = make_door(Vec3f{ 0.05f, 0.05f, 0.05f }, make_scaling(8.f, 10.f, 0.5f));
+	chapel.emplace_back(make_change(door, make_translation( {-4.f, 0.f, 5.f} )));
 	int doorCount = 1;
 
 	int vertexCount = floor.positions.size() + frontWall.positions.size() * wallBits + sideWall.positions.size() * sideWallBits 
@@ -393,7 +404,6 @@ int main() try
 		}
 
 		// Update state of camera
-		// TODO: Make movement based on current camera orientation.
 		auto const now = Clock::now();
 		float dt = std::chrono::duration_cast<Secondsf>(now - last).count();
 		last = now;
@@ -401,37 +411,7 @@ int main() try
 		if (angle >= 2.f * kPi_)
 			angle -= 2.f * kPi_;
 
-		
-
-
-
-		//Camera speed decision.
-		float speedChange = 0;
-		if (state.camControl.actionSpeedUp)
-			speedChange = kMovementModPos_;
-		else if (state.camControl.actionSlowDown)
-			speedChange = -kMovementModNeg_;
-		else
-			speedChange = 0;
-		// Update camera state based on keyboard input.
-		//Forward, backward
-		if (state.camControl.forward) {
-			state.camControl.cameraPos += state.camControl.cameraFront * (kMovementPerSecond_ + speedChange) * dt;
-		} else if (state.camControl.backward) {
-			state.camControl.cameraPos -= state.camControl.cameraFront *  (kMovementPerSecond_ + speedChange) * dt;
-		}
-		//Left, right
-		if (state.camControl.left) {
-			state.camControl.cameraPos -= normalize(cross(state.camControl.cameraFront, state.camControl.cameraUp)) * (kMovementPerSecond_ + speedChange) * dt;
-		} else if (state.camControl.right) {
-			state.camControl.cameraPos += normalize(cross(state.camControl.cameraFront, state.camControl.cameraUp)) * (kMovementPerSecond_ + speedChange) * dt;
-		}
-		//Up, down
-		if (state.camControl.up) {
-			state.camControl.cameraPos.y += (kMovementPerSecond_ + speedChange) * dt;
-		}else if (state.camControl.down) {
-			state.camControl.cameraPos.y -= (kMovementPerSecond_ + speedChange) * dt;
-		}
+		movementControl(state, dt);
 
 
 		//TODO: define and compute projCameraWorld matrix
@@ -448,8 +428,6 @@ int main() try
 			0.1f, 200.0f
 		);
 		projection = projection*Rx*Ry;
-
-		//door = make_change( door, make_rotation_y(angle) );
 
 
 		Mat44f projCameraWorld = projection * world2camera * model2world;
@@ -627,11 +605,40 @@ int main() try
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, NULL);
 		//Rotate door around door frame
-		model2world = make_translation({ 0.f, 3.f, 5.f }) * make_rotation_y(angle);
+		float aniDt = std::chrono::duration_cast<Secondsf>(now - aniStop).count();
+		float aniSpeedMod = 1.f;
+		if (state.aniControl.speedUp == true)
+			aniSpeedMod = kAniModPos_;
+		else if (state.aniControl.slowDown == true)
+			aniSpeedMod = kAniModNeg_;
+		else
+			aniSpeedMod = 1.f;
+
+		if (state.aniControl.pause == false)
+		{
+			aniStop = now;
+			if (doorAngle > kPi_ / 2 && increase == true)
+				increase = false;
+			else if (doorAngle < 0 && increase == false)
+				increase = true;
+			switch (increase)
+			{
+			case true:
+				doorAngle += aniDt * kPi_ * 0.3f * aniSpeedMod;
+				break;
+			case false:
+				doorAngle -= aniDt * kPi_ * 0.3f * aniSpeedMod;
+			}
+		}
+		else
+		{
+			aniStop = now;
+		}
+
+		model2world = make_translation({ -4.f, 0.f, 5.f }) * make_rotation_y(doorAngle) * make_translation({ 4.f, 0.f, -5.f });
 		projCameraWorld = projCameraWorld * model2world;
 		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "uProjCameraWorld"), 1, GL_TRUE, projCameraWorld.v);
 		glDrawArrays(GL_TRIANGLES, counter, door.positions.size());
-		
 		counter += door.positions.size() * doorCount;
 
 		model2world = kIdentity44f;
@@ -825,23 +832,23 @@ namespace
 				//Speedup, pause/play, slowdown
 				if (GLFW_KEY_J == aKey)
 				{
-					if (GLFW_PRESS == aAction)
+					if (GLFW_PRESS == aAction && state->aniControl.speedUp == false)
 						state->aniControl.speedUp = true;
-					else if (GLFW_RELEASE == aAction)
+					else if (GLFW_PRESS == aAction && state->aniControl.speedUp == true)
 						state->aniControl.speedUp = false;
 				}
 				if (GLFW_KEY_K == aKey)
 				{
-					if (GLFW_PRESS == aAction)
-						state->aniControl.pausePlay = true;
-					else if (GLFW_RELEASE == aAction)
-						state->aniControl.pausePlay = false;
+					if (GLFW_PRESS == aAction && state->aniControl.pause == false)
+						state->aniControl.pause = true;
+					else if (GLFW_PRESS == aAction && state->aniControl.pause == true)
+						state->aniControl.pause = false;
 				}
 				if (GLFW_KEY_L == aKey)
 				{
-					if (GLFW_PRESS == aAction)
+					if (GLFW_PRESS == aAction && state->aniControl.slowDown == false)
 						state->aniControl.slowDown = true;
-					else if (GLFW_RELEASE == aAction)
+					else if (GLFW_PRESS == aAction && state->aniControl.slowDown == true)
 						state->aniControl.slowDown = false;
 				}
 			}
@@ -881,6 +888,40 @@ namespace
 			state->camControl.lastY = float(aY);
 		}
 	}
+
+	void movementControl(State_ &state, float dt){
+		//Camera speed decision.
+		float speedChange = 0;
+		if (state.camControl.actionSpeedUp)
+			speedChange = kMovementModPos_;
+		else if (state.camControl.actionSlowDown)
+			speedChange = -kMovementModNeg_;
+		else
+			speedChange = 0;
+		// Update camera state based on keyboard input.
+		//Forward, backward
+		if (state.camControl.forward) {
+			state.camControl.cameraPos += state.camControl.cameraFront * (kMovementPerSecond_ + speedChange) * dt;
+		}
+		else if (state.camControl.backward) {
+			state.camControl.cameraPos -= state.camControl.cameraFront * (kMovementPerSecond_ + speedChange) * dt;
+		}
+		//Left, right
+		if (state.camControl.left) {
+			state.camControl.cameraPos -= normalize(cross(state.camControl.cameraFront, state.camControl.cameraUp)) * (kMovementPerSecond_ + speedChange) * dt;
+		}
+		else if (state.camControl.right) {
+			state.camControl.cameraPos += normalize(cross(state.camControl.cameraFront, state.camControl.cameraUp)) * (kMovementPerSecond_ + speedChange) * dt;
+		}
+		//Up, down
+		if (state.camControl.up) {
+			state.camControl.cameraPos.y += (kMovementPerSecond_ + speedChange) * dt;
+		}
+		else if (state.camControl.down) {
+			state.camControl.cameraPos.y -= (kMovementPerSecond_ + speedChange) * dt;
+		}
+	}
+
 	unsigned int loadTexture(char const * path) {
 	
 		assert( path );
