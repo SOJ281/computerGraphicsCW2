@@ -86,7 +86,6 @@ namespace
 		Vec3f specular;
 	};
 
-	void setMaterial(Material material, ShaderProgram* prog);
 
 	void glfw_callback_error_( int, char const* );
 	void glfw_callback_key_( GLFWwindow*, int, int, int, int );
@@ -104,11 +103,6 @@ namespace
 		~GLFWWindowDeleter();
 		GLFWwindow* window;
 	};
-}
-
-extern "C"
-{
-	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
 
 int main() try
@@ -195,7 +189,7 @@ int main() try
 	OGL_CHECKPOINT_ALWAYS();
 
 	// Global GL setup goes here
-	glEnable( GL_CULL_FACE );
+	//glEnable( GL_CULL_FACE );
 	glEnable( GL_DEPTH_TEST );
 	//glDepthMask(GL_TRUE);
 	glEnable(GL_BLEND);
@@ -233,6 +227,8 @@ int main() try
 	// Animation state
 	auto last = Clock::now();
 	float angle = 0.f;
+	float headAngle = 0.f;
+	float legAngle = 0.f;
 	auto aniStop = Clock::now();
 	float doorAngle = 0.f;
 	bool increase = true;
@@ -250,73 +246,7 @@ int main() try
 	float shininess;
 	*/
 	//Random guess
-	Material stone = {
-		Vec3f{.01f, .01f, .01f},
-		Vec3f{.4f, .4f, .4f},
-		Vec3f{0.f, 0.f, 0.f},
-		Vec3f{0.01f, 0.01f, 0.01f},
-		.4f
-	};
-	Material vantaBlack = {
-		Vec3f{0.f, 0.f, 0.f},
-		Vec3f{0.f, 0.f, 0.f},
-		Vec3f{0.f, 0.f, 0.f},
-		Vec3f{0.0f, 0.0f, 0.0f},
-		.4f
-	};
-	Material lampGlass = {
-		Vec3f{0.6f, 0.6f, 0.6f},
-		Vec3f{0.780392f, 0.568627f, 0.113725f},
-		Vec3f{0.6f, 0.6f, 0.6f},
-		Vec3f{0.05f, 0.05f, 0.05f}, //Most objects don't emit light
-		0.8f
-	};
 
-	//For coursework objective
-	Material uranium = {
-		Vec3f{.01f, .01f, .01f},
-		Vec3f{0.f, 0.f, 0.f},
-		Vec3f{0.f, 0.f, 0.f},
-		Vec3f{1.f, .5f, 0.3f},
-		.4f
-	};
-	Material shinyShiny = {
-		Vec3f{.01f, .01f, .01f},
-		Vec3f{0.8f, 0.5f, 0.f},
-		Vec3f{1.f, 1.f, 0.4f},
-		Vec3f{0.05f, 0.05f, 0.05f},
-		.9f
-	};
-	Material highDiffuse = {
-		Vec3f{.01f, .01f, .01f},
-		Vec3f{1.f, 1.f, 0.f},
-		Vec3f{0.f, 0.f, 0.f},
-		Vec3f{0.f, 0.f, 0.f},
-		.4f
-	};
-	//From Here http://devernay.free.fr/cours/opengl/materials.html
-	Material brass = {
-		Vec3f{0.329412f, 0.223529f, 0.027451f},
-		Vec3f{0.780392f, 0.568627f, 0.113725f},
-		Vec3f{0.992157f, 0.941176f, 0.807843f},
-		Vec3f{0.05f, 0.05f, 0.05f}, //Most objects don't emit light
-		0.21794872f
-	};
-	//From MTL files:
-	Material cushion = {
-		Vec3f{0.f, 0.f, 0.f},
-		Vec3f{0.203922f, 0.305882f, 0.556863f},
-		Vec3f{0.009961f, 0.009961f, 0.009961f},
-		Vec3f{0.f, 0.f, 0.f},
-		.4f
-	};
-	Material wood = {
-		Vec3f{0.f, 0.f, 0.f},
-		Vec3f{0.356863f, 0.223529f, 0.019608f},
-		Vec3f{0.009961f, 0.009961, 0.009961f},
-		Vec3f{0.f, 0.f, 0.f},
-		.4f
-	};
 
 	unsigned int ourSaviour = loadTexture("assets/markus.png");
 	//unsigned int ourBlank = loadTexture("assets/Solid_white.png");
@@ -472,13 +402,18 @@ int main() try
 	mammoth = (make_change(mammoth,  make_rotation_y( -3.141592f / 2.f )));
 	chapel.emplace_back(make_change(mammoth, make_translation( {25.f, -lowest-.01f, 84.f })));
 
+	//TEST DOOOR
+	auto door = make_cube(Vec3f{ 0.05f, 0.05f, 0.05f }, make_scaling(2.f, 2.f, 2.f));
+	chapel.emplace_back(make_change(door, make_translation( {-1.f, 2.f, 0.f} )));
+	int doorCount = 1;
+
 
 	int vertexCount = floor.positions.size() + frontWall.positions.size() * wallBits + sideWall.positions.size() * sideWallBits 
 	+ pillar.positions.size() * rows*2;
 	float sunXloc = -1.f;
 	printf("\nNINJA\n");
 	GLuint vao = create_vaoM(&chapel[0], 1 + wallBits + sideWallBits + rows*2+ pictures + backrooms 
-	+ benchCount + roofCount + plutoniumCount + shinyCount + diffuseCount + aquariumCount + doorCount);
+	+ benchCount + roofCount + plutoniumCount + shinyCount + diffuseCount + aquariumCount + 1 + doorCount);
 	//GLuint transparentVao = create_vaoM(&transparent[0], lampCount);
 	GLuint transparentVao = create_vaoM(&transparent[0], transparent.size());
 	printf("\nNINJA2\n");
@@ -794,6 +729,7 @@ int main() try
 		glBindTexture(GL_TEXTURE_2D, NULL);
 
 
+
 		//Calculates the angle of rotation for the door
 		doorAngle = doorControl(state, doorAngle, aniStop, increase);
 		model2world = make_translation({ -4.f, 0.f, 5.f }) * make_rotation_y(doorAngle) * make_translation({ 4.f, 0.f, -5.f });
@@ -808,6 +744,9 @@ int main() try
 
 		counter += mammoth.positions.size()*backrooms;
 		glDrawArrays( GL_TRIANGLES, 0, counter);
+
+
+
 
 
 		//Second shader
@@ -1206,36 +1145,6 @@ namespace
 			last = now;
 		}
 		return angle;
-	}
-
-	unsigned int loadTexture(char const * path) {
-	
-		assert( path );
-		unsigned int textureID;
-		glGenTextures(1, &textureID);
-
-		int width, height, nrComponents;
-		unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
-		GLenum format = 0;
-		if (nrComponents == 1)
-			format = GL_RED;
-		else if (nrComponents == 3)
-			format = GL_RGB;
-		else if (nrComponents == 4)
-			format = GL_RGBA;
-
-		glBindTexture(GL_TEXTURE_2D, textureID);
-		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		stbi_image_free(data);
-
-		return textureID;
 	}
 }
 
