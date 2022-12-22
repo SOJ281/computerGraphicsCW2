@@ -458,9 +458,9 @@ int main() try
 		// Let GLFW process events
 		glfwPollEvents();
 
-		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplGlfw_NewFrame();
-		ImGui::NewFrame();
+		//ImGui_ImplOpenGL3_NewFrame();
+		//ImGui_ImplGlfw_NewFrame();
+		//ImGui::NewFrame();
 		
 		// Check if window was resized.
 		float fbwidth, fbheight;
@@ -866,12 +866,12 @@ int main() try
 			glDrawArrays( GL_TRIANGLES, transPos[it->second], transparent[it->second].positions.size());
 		}
 
-		ImGui::Begin("ImGUI window");
-		ImGui::Text("Text");
-		ImGui::End();
+		//ImGui::Begin("ImGUI window");
+		//ImGui::Text("Text");
+		//ImGui::End();
 
-		ImGui::Render();
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		//ImGui::Render();
+		//ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 		glUseProgram( 0 );
 
