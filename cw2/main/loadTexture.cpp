@@ -4,8 +4,8 @@
 #include <stb_image_write.h>
 
 //#include <sys/stat.h>
-//#include <unistd.h>
-#include <io.h>
+#include <unistd.h>
+//#include <io.h>
 #include <string>
 //#include <fstream>
 
@@ -65,7 +65,7 @@ unsigned int createTexture(int width, int height, uint8_t * pixels) {
     int wid, heig, nrComponents;
     //for (;stbi_load(("Screenshot"+std::to_string(c)+".png").c_str(), &wid, &heig, &nrComponents, 0); c++);
     //for (; access( ("Screenshot"+std::to_string(c)+".png").c_str(), F_OK ) != -1 ; c++);
-    for (; access(("Screenshot" + std::to_string(c) + ".png").c_str(), 00) != -1; c++);
+    for (; access(("Screenshot" + std::to_string(c) + ".png").c_str(), F_OK) != -1; c++);
     stbi_write_png(("Screenshot"+std::to_string(c)+".png").c_str(), width, height, CHANNEL_NUM, reversedPixels, width * CHANNEL_NUM);
     return 1;
 }
