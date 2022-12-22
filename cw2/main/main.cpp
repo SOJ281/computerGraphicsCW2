@@ -1,3 +1,6 @@
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 #include <glad.h>
 #include <GLFW/glfw3.h>
 
@@ -259,8 +262,6 @@ int main() try
 
 	// Other initialization & loading
 	OGL_CHECKPOINT_ALWAYS();
-	
-	// TODO: 
 
 	unsigned int ourSaviour = loadTexture("assets/markus.png");
 	unsigned int ourCross = loadTexture("assets/Cross.png");
@@ -404,7 +405,6 @@ int main() try
 
 	auto mammoth = load_wavefront_obj( "assets/woolly-mammoth-skeleton-obj/woolly-mammoth-skeleton.obj" );
 	auto mammothShapes = getDimensions( "assets/woolly-mammoth-skeleton-obj/woolly-mammoth-skeleton.obj" );
-	printf("mammothShapes = %ld\n", mammothShapes.size());
 	mammoth = make_change(mammoth, make_scaling( 0.007f, 0.007f, 0.007f ));
 	float lowest = 5.f;
 	for (int i = 0; i < (int)mammoth.positions.size(); i++)
@@ -417,7 +417,6 @@ int main() try
 	chapel.emplace_back(make_change(door, make_translation( {-4.f, 0.f, 5.f} )));
 	int doorCount = 1;
 
-	printf("Chapel size=%ld", chapel.size());
 
 	float sunXloc = -1.f;
 	GLuint vao = create_vaoM(&chapel[0], chapel.size());
@@ -440,11 +439,24 @@ int main() try
 
 	OGL_CHECKPOINT_ALWAYS();
 
+
+	// Set up ImGUI
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	ImGui::StyleColorsDark;
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplOpenGL3_Init("#version 430");
+
 	// Main loop
 	while( !glfwWindowShouldClose( window ) )
 	{
 		// Let GLFW process events
 		glfwPollEvents();
+
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
 		
 		// Check if window was resized.
 		float fbwidth, fbheight;
@@ -492,37 +504,7 @@ int main() try
 
 
 		
-
-
-
-		//Camera speed decision.
-		float speedChange = 0;
-		if (state.camControl.actionSpeedUp)
-			speedChange = kMovementModPos_;
-		else if (state.camControl.actionSlowDown)
-			speedChange = -kMovementModNeg_;
-		else
-			speedChange = 0;
-		// Update camera state based on keyboard input.
-		//Forward, backward
-		if (state.camControl.forward) {
-			state.camControl.cameraPos += state.camControl.cameraFront * (kMovementPerSecond_ + speedChange) * dt;
-		} else if (state.camControl.backward) {
-			state.camControl.cameraPos -= state.camControl.cameraFront *  (kMovementPerSecond_ + speedChange) * dt;
-		}
-		//Left, right
-		if (state.camControl.left) {
-			state.camControl.cameraPos -= normalize(cross(state.camControl.cameraFront, state.camControl.cameraUp)) * (kMovementPerSecond_ + speedChange) * dt;
-		} else if (state.camControl.right) {
-			state.camControl.cameraPos += normalize(cross(state.camControl.cameraFront, state.camControl.cameraUp)) * (kMovementPerSecond_ + speedChange) * dt;
-		}
-		//Up, down
-		if (state.camControl.up) {
-			state.camControl.cameraPos.y += (kMovementPerSecond_ + speedChange) * dt;
-		}else if (state.camControl.down) {
-			state.camControl.cameraPos.y -= (kMovementPerSecond_ + speedChange) * dt;
-		}
-
+		movementControl(state, dt);
 
 		//TODO: define and compute projCameraWorld matrix
 		Mat44f model2world = kIdentity44f;
@@ -827,7 +809,7 @@ int main() try
 		currentMLoc += jelly.centreData.headCount;
 		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "scaleMat"),1, GL_TRUE, kIdentity44f.v);
 
-		glDrawArrays( GL_TRIANGLES, currentMLoc, jelly.centreData.bodyCount);
+		//glDrawArrays( GL_TRIANGLES, currentMLoc, jelly.centreData.bodyCount);
 		currentMLoc += jelly.centreData.bodyCount;
 
 
@@ -902,6 +884,12 @@ int main() try
 
 		}
 
+		ImGui::Begin("ImGUI window");
+		ImGui::Text("Text");
+		ImGui::End();
+
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 		glUseProgram( 0 );
 
@@ -914,7 +902,10 @@ int main() try
 	// Cleanup.
 	state.prog = nullptr;
 	state.moveProg = nullptr;
-	//TODO: additional cleanup
+	//additional cleanup
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 	
 	return 0;
 }

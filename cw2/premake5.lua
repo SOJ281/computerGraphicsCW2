@@ -88,6 +88,7 @@ project "main"
 	links "x-stb"
 	links "x-glad"
 	links "x-glfw"
+	links "x-imgui"
 
 	files( sources )
 
