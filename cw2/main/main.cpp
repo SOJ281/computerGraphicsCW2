@@ -54,6 +54,7 @@ namespace
 	{
 		ShaderProgram* prog;
 		ShaderProgram* moveProg;
+		ShaderProgram* billProg;
 
 		struct CamCtrl_
 		{
@@ -242,11 +243,19 @@ int main() try
 		});
 	state.prog = &prog;
 
+	ShaderProgram billProg({
+		{ GL_VERTEX_SHADER, "assets/billboard.vert" },
+		{ GL_FRAGMENT_SHADER, "assets/billboard.frag" }
+		});
+	state.billProg = &billProg;
+
 	// Animation state
 	auto last = Clock::now();
 	float angle = 0.f;
 	float headAngle = 0.f;
 	float legAngle = 0.f;
+	float movementAngle = 0.f;
+
 	auto aniStop = Clock::now();
 	float doorAngle = 0.f;
 	bool increase = true;
@@ -254,17 +263,11 @@ int main() try
 	// Other initialization & loading
 	OGL_CHECKPOINT_ALWAYS();
 
-
-
 	unsigned int ourSaviour = loadTexture("assets/markus.png");
-	//unsigned int ourBlank = loadTexture("assets/Solid_white.png");
-	unsigned int ourVoid = loadTexture("assets/Solid_black.png");
 	unsigned int ourCross = loadTexture("assets/Cross.png");
 	unsigned int eyeball = loadTexture("assets/eyeBall.png");
 	unsigned int clayN = loadTexture("assets/woolly-mammoth-skeleton-obj/ClayNormal.jpg");
 	unsigned int clayC = loadTexture("assets/woolly-mammoth-skeleton-obj/ClayColor.jpg");
-	//unsigned int ourFish = loadTexture("assets/nong-v-wcMK9KKbmms-unsplash.jpg");
-	//unsigned int ourFish = loadTexture("assets/fishTransparent.png");
 	
 	
 	
@@ -296,28 +299,26 @@ int main() try
 	}
 
 
-	auto pillar = make_cylinder( true, 18, {.1f, 0, .1f}, make_scaling( .75f, 10.f, .75f ) * make_rotation_z( 3.141592f / 2.f ));
+	auto pillar = make_cylinder( true, 18, {.1f, 0, .1f}, make_scaling( .75f, 20.f, .75f ) * make_rotation_z( 3.141592f / 2.f ));
 
 	auto lamp = make_cylinder( true, 18, {.1f, .1f, .1f}, make_scaling( .4f, 2.f, .4f ) * make_rotation_z( 3.141592f / 2.f ));
-	//lamp = invert_normals(lamp);
 	std::vector<PointLight> PointLightData;
 	int rows = 3;
-	int lampCount = 6;
 	for (float i = 0; i < rows; i++)
 		for (float l = 0; l < 2; l++) {
 			chapel.emplace_back(make_change(pillar, make_translation( { 5.f - 10.f*l, 0.f, 15.f + 15.f * i }) ));
 			//chapel.emplace_back(make_cylinder( true, 18, Vec3f{1, 0,0 1}, make_translation( { 22.f - 44.f*i, 0.f, 29.f })));
 		
 			PointLight p1;
-			p1.position = Vec3f{ 3.f - 6.f*l, 4.f, 15.f + 15.f * i };
+			p1.position = Vec3f{ 3.f - 6.f*l, 11.f, 15.f + 15.f * i };
 			p1.constant = 1.f;
-			p1.linear = 0.3f;
-			p1.quadratic = 0.032f;
+			p1.linear = 0.1f;
+			p1.quadratic = 0.016f;
 			p1.ambient = Vec3f{ .5f, .15f, .05f };
 			p1.diffuse = Vec3f{ .5f, .4f, .05f };
 			p1.specular = Vec3f{ .5f, .4f, .05f };
 			PointLightData.emplace_back(p1);
-			transparent.emplace_back(make_change(lamp, make_translation( { 3.f - 6.f*l, 2.f, 15.f + 15.f * i }) ));
+			transparent.emplace_back(make_change(lamp, make_translation( { 3.5f - 7.f*l, 10.f, 15.f + 15.f * i }) ));
 			transLocs.emplace_back(Vec3f{ 3.f - 6.f*l, 2.f, 15.f + 15.f * i });
 			transPos.emplace_back(transPos[transPos.size()-1] + lamp.positions.size());
 		}
@@ -350,7 +351,6 @@ int main() try
 
 	auto picture = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_rotation_z( -3.141592f / 2.f ) * make_rotation_y( 3.141592f / 2.f ) * make_scaling( .1f, 6.f, 7.62f ));//so 48 meter
 	chapel.emplace_back(make_change(picture, make_translation( { 0.f, 9.f, 108.8f }) ));
-	int pictures = 1;
 
 	auto backroom = make_partial_cylinder( false, 6, 1, make_rotation_y( -3.141592f / 3.f )* make_rotation_z( 3.141592f / 2.f ));
 	chapel.emplace_back(make_change(backroom, make_translation( { 0.f, 0.f, 86.8f })*  make_scaling( 54.f, 40.f, 40.f ) ));
@@ -382,19 +382,19 @@ int main() try
 	chapel.emplace_back(roof);
 	int roofCount = 1;
 
-	auto plutonium = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_scaling( 2.f, 2.f, 2.f ) * make_translation( {0.f, 5.f, 0.f }));//so 48 meter
+	auto plutonium = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_scaling( 2.f, 2.f, 2.f ) * make_translation( {0.f, 8.f, 0.f }));//so 48 meter
 	chapel.emplace_back(plutonium);
 	int plutoniumCount = 1;
 
 
 	//auto shiny = make_sphere( 46, make_scaling( 2.f, 2.f, 2.f ));//so 48 meter
-	auto shiny = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_scaling( 2.f, 2.f, 2.f ));//so 48 meter
-	chapel.emplace_back(make_change(shiny, make_translation( {0.f, 16.f, 0.f }) ));
+	auto shiny = make_cylinder( true, 16, Vec3f{0.05f, 0.05f, 0.05f}, make_scaling( 2.f, 2.f, 2.f ));//so 48 meter
+	chapel.emplace_back(make_change(shiny, make_translation( {0.f, 22.f, 0.f }) ));
 	int shinyCount = 1;
 
 
 	auto diffuseObject = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_scaling( 2.f, 2.f, 2.f ));//so 48 meter
-	chapel.emplace_back(make_change(diffuseObject, make_translation( {0.f, 22.f, 0.f }) ));
+	chapel.emplace_back(make_change(diffuseObject, make_translation( {0.f, 28.f, 0.f }) ));
 	int diffuseCount = 1;
 
 
@@ -407,7 +407,7 @@ int main() try
 	auto mammothShapes = getDimensions( "assets/woolly-mammoth-skeleton-obj/woolly-mammoth-skeleton.obj" );
 	mammoth = make_change(mammoth, make_scaling( 0.007f, 0.007f, 0.007f ));
 	float lowest = 5.f;
-	for (int i = 0; i < mammoth.positions.size(); i++)
+	for (int i = 0; i < (int)mammoth.positions.size(); i++)
 		if (lowest > mammoth.positions[i].y)
 			lowest = mammoth.positions[i].y;
 	mammoth = (make_change(mammoth,  make_rotation_y( -3.141592f / 2.f )));
@@ -424,21 +424,17 @@ int main() try
 
 
 	std::vector<SimpleMeshData> movingObjects;
-
-	auto doorA= make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_translation( Vec3f{ 1.f, 0.f, 0.f} ));//so 48 meter
-	doorA = make_change(doorA, make_scaling( 2.f, 4.f, 0.1f ) );
-	movingObjects.emplace_back(make_change(doorA, make_translation( {-4.f, 2.f, 5.f }) ));
-
 	auto jelly = make_jellyfish( 16, make_translation( Vec3f{ 0.f, 10.f, -20.f} ));//so 48 meter
-	//doorA = make_change(doorA, make_scaling( 2.f, 4.f, 0.1f ) );
 	movingObjects.emplace_back(jelly.data);
-	//int headSize = jelly;
-	//int coreSize = make_cylinder( true, 18, {.5f, 0.5f, .5f}, make_rotation_z( 3.141592f / 2.f )).positions.size();
+	GLuint movingVao = create_vaoM(&movingObjects[0], 1);
 
-	GLuint movingVao = create_vaoM(&movingObjects[0], 2);
 
-	float lolo = 0;
 
+	std::vector<SimpleMeshData> congregants;
+	std::vector<Vec3f> direction;
+	auto sprite = make_frame( Vec3f{0.05f, 0.05f, 0.05f}, make_rotation_y( 3.141592f/2));//so 48 meter
+	congregants.emplace_back(make_change(sprite, make_translation( {0.f, 2.f, 0.f} )));
+	GLuint congregantsVao = create_vaoM(&congregants[0], 1);
 
 
 	OGL_CHECKPOINT_ALWAYS();
@@ -497,10 +493,14 @@ int main() try
 		if (headAngle >= kPi_)
 			headAngle -= kPi_;
 
-
 		legAngle += dt * kPi_ * 0.05f;
 		if (legAngle >= kPi_/3.f)
 			legAngle -= kPi_/3.f;
+
+
+		movementAngle += dt * kPi_ * 0.05f;
+		if (movementAngle >= 2*kPi_)
+			movementAngle -= kPi_;
 
 
 		
@@ -511,8 +511,7 @@ int main() try
 		Mat44f Rx = make_rotation_x( state.camControl.theta );
 		Mat44f Ry = make_rotation_y( state.camControl.phi );
 		Mat44f world2camera = make_translation(state.camControl.cameraPos);
-		//Mat44f world2camera = T*Rx*Ry;
-		//Mat44f world2camera = make_translation( { 0.f, 0.f, -10.f } );
+
 
 		Mat44f projection = make_perspective_projection(
 			60.f * 3.1415926f / 180.f,
@@ -531,11 +530,8 @@ int main() try
 			sunXloc = -1.f;
 		Vec3f lightDir = normalize( Vec3f{ 0.f, 0.5f, -1.f } );
 
-		//Vec3f lightPos = Vec3f{ 0.f, -1.f, 1.f };
-
 
 		//Animation stuff
-		Vec3f doorHinge = Vec3f{-4.f, 2.f, 5.f };
 		Vec3f noHinge = Vec3f{0.f, 0.f, 0.f };
 
 		
@@ -573,8 +569,8 @@ int main() try
 		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "scaleMat"),1, GL_TRUE, kIdentity44f.v);
 
 
-		glUniform1i(glGetUniformLocation(prog.programId(), "texture.diffuse"), 0); //lightDir uLightDir
-		glUniform1i(glGetUniformLocation(prog.programId(), "texture.specular"), 0); //lightDir uLightDir
+		glUniform1i(glGetUniformLocation(prog.programId(), "texture.diffuse"), 1); //lightDir uLightDir
+		glUniform1i(glGetUniformLocation(prog.programId(), "texture.specular"), 1); //lightDir uLightDir
 
 
 		glUniform3fv(glGetUniformLocation(prog.programId(), "uLightDir"), 1, &lightDir.x ); //lightDir uLightDir
@@ -588,7 +584,6 @@ int main() try
 
 
 		
-		#include <string>
 		//lolo += 1;
 		//if (lolo >= 30)
 		//	lolo -= 30;
@@ -654,6 +649,8 @@ int main() try
 		setMaterial(stone, state.prog);
 		glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, ourSaviour);
+		glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, ourCross);
 		glDrawArrays( GL_TRIANGLES, counter, picture.positions.size());
 		counter += picture.positions.size();
 
@@ -671,7 +668,7 @@ int main() try
 		
 
 		glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, ourVoid);
+        glBindTexture(GL_TEXTURE_2D, 0);
 		//counter += benches.positions.size()*benchCount;
 		//glDrawArrays( GL_TRIANGLES, 0, counter);
 		//printf("\nbencSize = %ld", benches.positions.size());
@@ -752,12 +749,14 @@ int main() try
 		model2world = make_translation({ -4.f, 0.f, 5.f }) * make_rotation_y(doorAngle) * make_translation({ 4.f, 0.f, -5.f });
 		projCameraWorld = projCameraWorld * model2world;
 		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "uProjCameraWorld"), 1, GL_TRUE, projCameraWorld.v);
+		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "rotateMat"), 1, GL_TRUE, make_rotation_y(doorAngle).v);
 		glDrawArrays(GL_TRIANGLES, counter, door.positions.size());
 		counter += door.positions.size() * doorCount;
 
 		model2world = kIdentity44f;
 		projCameraWorld = projection * world2camera * model2world;
 		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "uProjCameraWorld"), 1, GL_TRUE, projCameraWorld.v);
+		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "rotateMat"), 1, GL_TRUE, kIdentity44f.v);
 
 
 
@@ -782,25 +781,21 @@ int main() try
 		setMaterial(brass, state.moveProg);
 		glUniform1f(glGetUniformLocation(moveProg.programId(), "material.opacity"), 1);
 
-		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotation"),1, GL_TRUE, make_rotation_y( angle).v);
-		glUniform3fv(glGetUniformLocation(moveProg.programId(), "point"),1, &doorHinge.x);
-
 
 		glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, 0);
 		glBindVertexArray( movingVao );
 		int currentMLoc = 0;
 
-		//glDrawArrays( GL_TRIANGLES, currentMLoc, doorA.positions.size());
-		currentMLoc += doorA.positions.size();
-
-
-		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotateMat"),1, GL_TRUE, make_rotation_y(0).v);
-		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "scaleMat"),1, GL_TRUE, make_rotation_y(0).v);
+		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotateMat"),1, GL_TRUE, make_rotation_y(movementAngle).v);
+		Vec3f chapelMid = Vec3f{0.f, 0.f, 65.f };
+		glUniform3fv(glGetUniformLocation(moveProg.programId(), "point"),1, &chapelMid.x);
+		glUniform1f(glGetUniformLocation(moveProg.programId(), "material.opacity"), 1);
+		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "scaleMat"),1, GL_TRUE, kIdentity44f.v);
 		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotationLegX"),1, GL_TRUE, kIdentity44f.v);
 		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotationLegZ"),1, GL_TRUE, kIdentity44f.v);
 
-		Vec3f bounce = Vec3f{0.f, 3.f *(float)sin(angle), 0.f };
+		Vec3f bounce = Vec3f{0.f, 6.f *(float)sin(angle), 0.f };
 		glUniform3fv(glGetUniformLocation(moveProg.programId(), "translateV"),1, &bounce.x);
 
 
@@ -819,19 +814,21 @@ int main() try
 
 
 		for (int i = 0; i < jelly.centreData.legNo; i++) {
+		//for (int i = 0; i < 1; i++) {
 			//float dzdx = (jelly.centreData.legs[i].z - jelly.centreData.head.z) / (jelly.centreData.legs[i].x - jelly.centreData.head.x);
-			float lX = legAngle * (jelly.centreData.legs[i].x - jelly.centreData.head.x)/10;
-			float lZ = legAngle * (jelly.centreData.legs[i].z - jelly.centreData.head.z)/10;
+			//float lX = legAngle * (jelly.centreData.legs[i].x - jelly.centreData.head.x)/6;
+			//float lZ = legAngle * (jelly.centreData.legs[i].z - jelly.centreData.head.z)/6;
 			//Vec3f currentPointBy = jelly.centreData.legTop[i];
 			glUniform3fv(glGetUniformLocation(moveProg.programId(), "legCentre"),1, &jelly.centreData.legs[i].x);
-			glUniform3fv(glGetUniformLocation(moveProg.programId(), "point"),1, &jelly.centreData.legTop[i].x);
-			for (int l = 0; l < 10; l++) {
-				glUniform1f(glGetUniformLocation(moveProg.programId(), "legSeg"), 1);
-				glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotationLegX"),1, GL_TRUE, make_rotation_z(lX).v);
-				glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotationLegZ"),1, GL_TRUE, make_rotation_x(-lZ).v);
-				glDrawArrays( GL_TRIANGLES, currentMLoc + (jelly.centreData.legCount/10)*l, (jelly.centreData.legCount/10));
+			//glUniform3fv(glGetUniformLocation(moveProg.programId(), "point"),1, &jelly.centreData.legTop[i].x);
+			for (int l = 0; l < 6; l++) {
+				glUniform1f(glGetUniformLocation(moveProg.programId(), "legSeg"), l);
+				//glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotationLegX"),1, GL_TRUE, make_rotation_z(lX).v);
+				//glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotationLegZ"),1, GL_TRUE, make_rotation_x(-lZ).v);
+				glDrawArrays( GL_TRIANGLES, currentMLoc, jelly.centreData.segment);
+				currentMLoc += jelly.centreData.segment;
 			}
-			currentMLoc += jelly.centreData.legCount;
+			//currentMLoc += jelly.centreData.legCount;
 		}
 		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotationLegX"),1, GL_TRUE, kIdentity44f.v);
 		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotationLegZ"),1, GL_TRUE, kIdentity44f.v);
@@ -842,28 +839,49 @@ int main() try
 		glUniform3fv(glGetUniformLocation(moveProg.programId(), "translateV"),1, &(blankTranslation).x);
 
 
-		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotation"),1, GL_TRUE, make_rotation_y(0).v);
+		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotation"),1, GL_TRUE, kIdentity44f.v);
+		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotateMat"),1, GL_TRUE, kIdentity44f.v);
 		glBindVertexArray( 0 );
-
-		glBindVertexArray( transparentVao );
-
-
-
-
 
 
 		glUseProgram( 0 );
+
+		glUseProgram( billProg.programId() );
+		glBindVertexArray( congregantsVao );
+		glUniform3f(glGetUniformLocation(billProg.programId(), "viewPos"), state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z ); //uSceneAmbient
+//projection * world2camera
+		glUniformMatrix4fv(glGetUniformLocation(billProg.programId(), "world2camera"), 1, GL_TRUE, world2camera.v );
+		glUniformMatrix4fv(glGetUniformLocation(billProg.programId(), "projection"), 1, GL_TRUE, projection.v );
+		glUniformMatrix4fv(glGetUniformLocation(billProg.programId(), "uProjCameraWorld"), 1, GL_TRUE, projCameraWorld.v );
+		glUniformMatrix3fv(glGetUniformLocation(billProg.programId(), "uNormalMatrix"),1, GL_TRUE, normalMatrix.v);
+		glUniform1i(glGetUniformLocation(billProg.programId(), "sprite"), 1); //lightDir uLightDir
+
+
+		glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, eyeball);
+		glDrawArrays( GL_TRIANGLES, 0, sprite.positions.size());
+
+		glBindVertexArray( 0 );
+
+
+
+		glBindVertexArray( transparentVao );
+		glUseProgram( 0 );
 		glUseProgram( prog.programId() );
 
-		setMaterial(lampGlass, state.prog);
-		glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, 0);
-		glUniform1f(glGetUniformLocation(prog.programId(), "material.opacity"), 0.4);
 
 		for (std::map<float, int>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it) {
-			glActiveTexture(GL_TEXTURE0);
-        	glBindTexture(GL_TEXTURE_2D, ourCross);
+			if (transparent[it->second].positions.size() == lamp.positions.size()) {
+				setMaterial(lampGlass, state.prog);
+				glActiveTexture(GL_TEXTURE0);
+        		glBindTexture(GL_TEXTURE_2D, ourCross);
+			} else {
+				setMaterial(stainedWindow, state.prog);
+				glActiveTexture(GL_TEXTURE0);
+        		glBindTexture(GL_TEXTURE_2D, ourCross);
+			}
 			glDrawArrays( GL_TRIANGLES, transPos[it->second], transparent[it->second].positions.size());
+
 		}
 
 		//ImGui::Begin("ImGUI window");

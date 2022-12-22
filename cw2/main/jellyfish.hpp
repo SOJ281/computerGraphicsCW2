@@ -18,6 +18,8 @@ struct objectCentres {
     std::vector<Vec3f> legs;
     std::vector<Vec3f> legTop;
     int legCount;
+    int segment;
+    int segHeight;
     int legNo;
 };
 
