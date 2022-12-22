@@ -336,78 +336,8 @@ SimpleMeshData make_frame(Vec3f aColor, Mat44f aPreTransform ) {
 }
 
 SimpleMeshData make_sphere(std::size_t aSubdivs, Mat44f aPreTransform ) {
-	/*
-	std::vector<Vec3f> pos;
-	std::vector<Vec3f> norm;
-	std::vector<Vec2f> tex;
-
-	Mat33f const N = mat44_to_mat33( transpose(invert(aPreTransform)) );
-
-
-    float radius = 3.f;
-    float sectorCount = 12.f;
-    float stackCount = 12.f;
-
-    float x, y, z, xy;                              // vertex position
-    float nx, ny, nz, lengthInv = 1.0f / radius;    // vertex normal
-    float s, t;                                     // vertex texCoord
-    float PI = 3.14;
-
-    float sectorStep = 2 * PI / sectorCount;
-    float stackStep = PI / stackCount;
-    float sectorAngle, stackAngle;
-
-    for(int i = 0; i <= stackCount; ++i) {
-        stackAngle = PI / 2 - i * stackStep;        // starting from pi/2 to -pi/2
-        xy = radius * cosf(stackAngle);             // r * cos(u)
-        z = radius * sinf(stackAngle);              // r * sin(u)
-
-        // add (sectorCount+1) vertices per stack
-        // the first and last vertices have same position and normal, but different tex coords
-        for(int j = 0; j <= sectorCount; ++j)
-        {
-            sectorAngle = j * sectorStep;           // starting from 0 to 2pi
-
-            // vertex position (x, y, z)
-            x = xy * cosf(sectorAngle);             // r * cos(u) * cos(v)
-            y = xy * sinf(sectorAngle);             // r * cos(u) * sin(v)
-            pos.emplace_back( Vec3f{ x, y, z } );
-
-            // normalized vertex normal (nx, ny, nz)
-            nx = x * lengthInv;
-            ny = y * lengthInv;
-            nz = z * lengthInv;
-            norm.emplace_back( Vec3f{ nx, ny, nz } );
-
-            // vertex tex coord (s, t) range between [0, 1]
-            s = (float)j / sectorCount;
-            t = (float)i / stackCount;
-            tex.emplace_back( Vec2f{s, t} );
-        }
-    }
-
-    //norm = calcNorms(pos);
-	for( auto& n : norm ) {
-		//Vec4f p4{ n.x, n.y, n.z, 1.f };
-		Vec3f t = N * n;
-		//t /= t.w;
-		n = t;
-		//n = { 1, 1, 1};
-	}
-
-	for( auto& p : pos ) {
-		Vec4f p4{ p.x, p.y, p.z, 1.f };
-		Vec4f t = aPreTransform * p4;
-		t /= t.w;
-		p = Vec3f{ t.x, t.y, t.z };
-	}
-
-
-
-    return SimpleMeshData{ std::move(pos), std::move(norm), std::move(tex) };*/
-
 	int lSubdivs = 10;
-std::vector<Vec3f> pos;
+	std::vector<Vec3f> pos;
 	std::vector<Vec3f> norm;
 	std::vector<Vec2f> tex;
 

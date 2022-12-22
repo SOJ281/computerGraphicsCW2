@@ -62,7 +62,7 @@ namespace
 
 			float lastX, lastY;
 			// Camera position, direction faced and up vector.
-			Vec3f cameraPos = { 0.f, -3.f, -3.f };
+			Vec3f cameraPos = { 0.f, -3.f, 10.f };
 			Vec3f cameraFront = {0.f, 0.f, 1.f};
 			Vec3f cameraUp = { 0.f, 1.f, 0.f };
 
@@ -81,6 +81,19 @@ namespace
 		float constant;
 		float linear;
 		float quadratic;
+		Vec3f ambient;
+		Vec3f diffuse;
+		Vec3f specular;
+	};
+	struct SpotLight {
+		Vec3f position;
+		Vec3f direction;
+		float phi;
+		
+		float constant;
+		float linear;
+		float quadratic;
+		
 		Vec3f ambient;
 		Vec3f diffuse;
 		Vec3f specular;
@@ -105,10 +118,6 @@ namespace
 	};
 }
 
-extern "C"
-{
-	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
-}
 
 
 int main() try
@@ -259,6 +268,8 @@ int main() try
 	unsigned int ourVoid = loadTexture("assets/Solid_black.png");
 	unsigned int ourCross = loadTexture("assets/Cross.png");
 	unsigned int eyeball = loadTexture("assets/eyeBall.png");
+	unsigned int clayN = loadTexture("assets/woolly-mammoth-skeleton-obj/ClayNormal.jpg");
+	unsigned int clayC = loadTexture("assets/woolly-mammoth-skeleton-obj/ClayColor.jpg");
 	//unsigned int ourFish = loadTexture("assets/nong-v-wcMK9KKbmms-unsplash.jpg");
 	//unsigned int ourFish = loadTexture("assets/fishTransparent.png");
 	
@@ -296,15 +307,6 @@ int main() try
 
 	auto lamp = make_cylinder( true, 18, {.1f, .1f, .1f}, make_scaling( .4f, 2.f, .4f ) * make_rotation_z( 3.141592f / 2.f ));
 	//lamp = invert_normals(lamp);
-	struct PointLight {
-			Vec3f position;
-			float constant;
-			float linear;
-			float quadratic;
-			Vec3f ambient;
-			Vec3f diffuse;
-			Vec3f specular;
-	};
 	std::vector<PointLight> PointLightData;
 	int rows = 3;
 	int lampCount = 6;
@@ -327,6 +329,19 @@ int main() try
 			transPos.emplace_back(transPos[transPos.size()-1] + lamp.positions.size());
 		}
 
+	std::vector<SpotLight> spotLightData;
+	SpotLight p1;
+	p1.position = Vec3f{ 0.f, 5.f, 86.6f };
+	p1.direction = Vec3f{ 1.f, 1.f, 0.f };
+	p1.phi = 0.94f;
+	p1.constant = .5f;
+	p1.linear = 0.00003f;
+	p1.quadratic = 0.000004f;
+	p1.ambient = Vec3f{ -.5f, -.5f, .0f };
+	p1.diffuse = Vec3f{ -.9f, -.7f, -.05f };
+	p1.specular = Vec3f{ -.5f, -.4f, -.05f };
+	spotLightData.emplace_back(p1);
+
 	//4 Windows
 	//auto stainWindow = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_rotation_y( 3.141592f) * make_scaling( .1f, 5.f, 4.5f ));//so 48 meter
 	auto stainWindow = make_frame( Vec3f{0.05f, 0.05f, 0.05f}, make_rotation_y( 3.141592f/2) * make_scaling( 5.f, 5.f, 4.5f ));//so 48 meter
@@ -344,10 +359,13 @@ int main() try
 	chapel.emplace_back(make_change(picture, make_translation( { 0.f, 9.f, 108.8f }) ));
 	int pictures = 1;
 
-	auto backroom = make_partial_building( true, 6, 1, make_rotation_y( -3.141592f / 3.f )* make_rotation_z( 3.141592f / 2.f ));
+	auto backroom = make_partial_cylinder( false, 6, 1, make_rotation_y( -3.141592f / 3.f )* make_rotation_z( 3.141592f / 2.f ));
 	chapel.emplace_back(make_change(backroom, make_translation( { 0.f, 0.f, 86.8f })*  make_scaling( 54.f, 40.f, 40.f ) ));
 	//chapel.emplace_back(backroom);
 	int backrooms = 1;
+	auto backRoof = make_cone(6, make_rotation_y( -3.141592f / 3.f )* make_rotation_z( 3.141592f / 2.f ));
+	chapel.emplace_back(make_change(backRoof, make_translation( { 0.f, 40.f, 86.8f })*  make_scaling( 54.f, 40.f, 40.f ) ));
+	//chapel.emplace_back(backroom);
 
 
 	std::vector<SimpleMeshData> parts;
@@ -364,7 +382,7 @@ int main() try
 
 	
 
-	auto roof = make_partial_cylinder( true, 124, 62, {.02f, .02f, .02f},  make_scaling( 1.f, 1.f, 1.f ));
+	auto roof = make_partial_cylinder( true, 124, 62,  make_scaling( 1.f, 1.f, 1.f ));
 	roof = make_change(roof, make_rotation_x( -3.141592f / 2.f )* make_rotation_z( 3.141592f / 2.f ) );
 	roof = make_change(roof, make_scaling( 28.f, 20.f, 50.f ) );
 	roof = make_change(roof, make_translation( {0.f, 30.f, 55.f }) );
@@ -394,6 +412,7 @@ int main() try
 
 	auto mammoth = load_wavefront_obj( "assets/woolly-mammoth-skeleton-obj/woolly-mammoth-skeleton.obj" );
 	auto mammothShapes = getDimensions( "assets/woolly-mammoth-skeleton-obj/woolly-mammoth-skeleton.obj" );
+	printf("mammothShapes = %ld\n", mammothShapes.size());
 	mammoth = make_change(mammoth, make_scaling( 0.007f, 0.007f, 0.007f ));
 	float lowest = 5.f;
 	for (int i = 0; i < mammoth.positions.size(); i++)
@@ -406,10 +425,10 @@ int main() try
 	chapel.emplace_back(make_change(door, make_translation( {-4.f, 0.f, 5.f} )));
 	int doorCount = 1;
 
+	printf("Chapel size=%ld", chapel.size());
 
 	float sunXloc = -1.f;
-	GLuint vao = create_vaoM(&chapel[0], 1 + wallBits + sideWallBits + rows*2+ pictures + backrooms 
-	+ benchCount + roofCount + plutoniumCount + shinyCount + diffuseCount + aquariumCount + 1 + doorCount);
+	GLuint vao = create_vaoM(&chapel[0], chapel.size());
 	GLuint transparentVao = create_vaoM(&transparent[0], transparent.size());
 
 
@@ -427,6 +446,7 @@ int main() try
 
 	GLuint movingVao = create_vaoM(&movingObjects[0], 2);
 
+	float lolo = 0;
 
 
 
@@ -477,6 +497,7 @@ int main() try
 		legAngle += dt * kPi_ * 0.05f;
 		if (legAngle >= kPi_/3.f)
 			legAngle -= kPi_/3.f;
+
 
 		
 
@@ -583,7 +604,7 @@ int main() try
 
 
 		glUniform3fv(glGetUniformLocation(prog.programId(), "uLightDir"), 1, &lightDir.x ); //lightDir uLightDir
-		glUniform3f( glGetUniformLocation(prog.programId(), "uLightDiffuse"), .6f, .6f, .6f ); //lightDiffuse
+		glUniform3f( glGetUniformLocation(prog.programId(), "uLightDiffuse"), .2f, .2f, .2f ); //lightDiffuse
 		glUniform3f( glGetUniformLocation(prog.programId(), "uSceneAmbient"), 0.1f, 0.1f, 0.1f ); //uSceneAmbient
 		glUniform3f( glGetUniformLocation(prog.programId(), "uSpecular"), .5f, .4f, .05f ); //uSceneAmbient
 		//printf("normalMatrix: (%f, %f, %f)\n", state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z);
@@ -594,6 +615,23 @@ int main() try
 
 		
 		#include <string>
+		//lolo += 1;
+		//if (lolo >= 30)
+		//	lolo -= 30;
+		//spotLightData[0].phi = lolo;
+		for (int i = 0; i < 1; i++) {
+			std::string number = std::to_string(i);
+			glUniform3fv(glGetUniformLocation(prog.programId(), ("spotLights["+number+"].position").c_str()), 1, &spotLightData[i].position.x ); //lightDir uLightDir
+			glUniform3fv(glGetUniformLocation(prog.programId(), ("spotLights["+number+"].direction").c_str()), 1, &spotLightData[i].direction.x ); //lightDir uLightDir
+			glUniform1f(glGetUniformLocation(prog.programId(), ("spotLights["+number+"].phi").c_str()), spotLightData[i].phi ); //lightDir uLightDir
+			glUniform1f(glGetUniformLocation(prog.programId(), ("spotLights["+number+"].constant").c_str()), spotLightData[i].constant ); //lightDir uLightDir
+			glUniform1f(glGetUniformLocation(prog.programId(), ("spotLights["+number+"].linear").c_str()), spotLightData[i].linear ); //lightDir uLightDir
+			glUniform1f(glGetUniformLocation(prog.programId(), ("spotLights["+number+"].quadratic").c_str()), spotLightData[i].quadratic ); //lightDir uLightDir
+			glUniform3fv(glGetUniformLocation(prog.programId(), ("spotLights["+number+"].ambient").c_str()), 1, &spotLightData[i].ambient.x ); //lightDir uLightDir
+			glUniform3fv(glGetUniformLocation(prog.programId(), ("spotLights["+number+"].diffuse").c_str()), 1, &spotLightData[i].diffuse.x ); //lightDir uLightDir
+			glUniform3fv(glGetUniformLocation(prog.programId(), ("spotLights["+number+"].specular").c_str()), 1, &spotLightData[i].specular.x ); //lightDir uLightDir
+		}
+
 		for (int i = 0; i < 6; i++) {
 			std::string number = std::to_string(i);
 			glUniform3fv(glGetUniformLocation(prog.programId(), ("pointLights["+number+"].position").c_str()), 1, &PointLightData[i].position.x ); //lightDir uLightDir
@@ -619,9 +657,9 @@ int main() try
 		glUniform1f(glGetUniformLocation(prog.programId(), "material.opacity"), 1);
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, NULL);
+        glBindTexture(GL_TEXTURE_2D, 0);
 
-		setMaterial(stone, state.prog);
+		setMaterial(hardStone, state.prog);
 		int counter = 0;
 		glDrawArrays( GL_TRIANGLES, counter, floor.positions.size());
 		counter += floor.positions.size();
@@ -649,9 +687,13 @@ int main() try
 
 
 		glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, NULL);
+        glBindTexture(GL_TEXTURE_2D, 0);
 		glDrawArrays( GL_TRIANGLES, counter, backroom.positions.size() * backrooms);
 		counter += backroom.positions.size()*backrooms;
+
+
+		glDrawArrays( GL_TRIANGLES, counter, backRoof.positions.size());
+		counter += backRoof.positions.size();
 		
 
 		glActiveTexture(GL_TEXTURE0);
@@ -717,13 +759,20 @@ int main() try
 		counter += aquarium.positions.size() * aquariumCount;
 
 
-		setMaterial(wood, state.prog);
+		setMaterial(pureWhite, state.prog);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, NULL);
+		glBindTexture(GL_TEXTURE_2D, clayN);
 
-		glDrawArrays( GL_TRIANGLES, counter, mammoth.positions.size() * backrooms);
-		counter += mammoth.positions.size() * backrooms;
+		glDrawArrays( GL_TRIANGLES, counter, mammothShapes[0]);
+		counter += mammothShapes[0];
 
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, clayC);
+		glDrawArrays( GL_TRIANGLES, counter, mammothShapes[1]);
+		counter += mammothShapes[1];
+
+
+		setMaterial(wood, state.prog);
 		//Calculates the angle of rotation for the door
 		doorAngle = doorControl(state, doorAngle, aniStop, increase);
 		model2world = make_translation({ -4.f, 0.f, 5.f }) * make_rotation_y(doorAngle) * make_translation({ 4.f, 0.f, -5.f });
@@ -740,7 +789,7 @@ int main() try
 
 
 
-		//Second shader
+		//Second shader for the jellyfish
 		glUseProgram( 0 );
 		glUseProgram( moveProg.programId() );
 
@@ -764,7 +813,7 @@ int main() try
 
 
 		glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, NULL);
+        glBindTexture(GL_TEXTURE_2D, 0);
 		glBindVertexArray( movingVao );
 		int currentMLoc = 0;
 
@@ -834,7 +883,7 @@ int main() try
 
 		setMaterial(lampGlass, state.prog);
 		glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, NULL);
+        glBindTexture(GL_TEXTURE_2D, 0);
 		glUniform1f(glGetUniformLocation(prog.programId(), "material.opacity"), 0.4);
 
 		for (std::map<float, int>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it) {

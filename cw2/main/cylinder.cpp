@@ -337,25 +337,15 @@ SimpleMeshData make_cone(std::size_t aSubdivs, Mat44f aPreTransform ) {
 		tex.emplace_back( Vec2f{ 1.f, 0.f} );
 		tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)});
 
-		//interior
-		pos.emplace_back( Vec3f{ 0.f, prevY*1.1f, prevZ*1.1f } );
-		pos.emplace_back( Vec3f{ 1.f, 0, 0  } );
-		pos.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
 
-		//norm.emplace_back( Vec3f{ 1.f, 1-y, 1-z } );
-		//norm.emplace_back( Vec3f{ 1.f, 0, 0 } );
-		//norm.emplace_back( Vec3f{ 1.f, 1-prevY, 1-prevZ } );
 
-		tex.emplace_back( Vec2f{ 0.f, (float)((i+1)/aSubdivs)} );
-		tex.emplace_back( Vec2f{ 0.f, 0.f} );
-		tex.emplace_back( Vec2f{ 0.f, (float)((i)/aSubdivs)});
 
 
 
 
 		//exterior
 		pos.emplace_back( Vec3f{ 0.f, y*1.1f, z*1.1f } );
-		pos.emplace_back( Vec3f{ 1.f*1.1f, 0, 0 } );
+		pos.emplace_back( Vec3f{ 2.2f, 0, 0 } );
 		pos.emplace_back( Vec3f{ 0.f, prevY*1.1f, prevZ*1.1f } );
 
 		//norm.emplace_back( Vec3f{ 0.f, y*1.1f, z*1.1f  } );
@@ -366,34 +356,31 @@ SimpleMeshData make_cone(std::size_t aSubdivs, Mat44f aPreTransform ) {
 		tex.emplace_back( Vec2f{ 1.f, 0.f} );
 		tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)});
 
-		//exterior
-		pos.emplace_back( Vec3f{ 1.f,  0, 0 } );
-		pos.emplace_back( Vec3f{ 1.1f, 0, 0 } );
-		pos.emplace_back( Vec3f{ 0.f, prevY*1.1f, prevZ*1.1f } );
 
-		//norm.emplace_back( Vec3f{ 1.f, y*1.1f, z*1.1f  } );
-		//norm.emplace_back( Vec3f{ 2.2f, 0, 0 } );
-		//norm.emplace_back( Vec3f{ 1.f, prevY*1.1f, prevZ*1.1f } );
 
-		tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/aSubdivs)} );
-		tex.emplace_back( Vec2f{ 1.f, 0.f} );
-		tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)});
 
 
 		//Bottom
-
 		pos.emplace_back( Vec3f{ 0.f, y*1.1f, z*1.1f } );
-		pos.emplace_back( Vec3f{ 0.f, y*1.1f, prevZ*1.1f } );
+		pos.emplace_back( Vec3f{ 0.f, y, z } );
 		pos.emplace_back( Vec3f{ 0.f, prevY*1.1f, prevZ*1.1f } );
+
+		norm.emplace_back(Vec3f{ 0.f, 1 - prevY, 1 - prevZ });
+		norm.emplace_back(Vec3f{ 0.f, 0, 0 });
+		norm.emplace_back( Vec3f{ 0.f, 1-y, 1-z } );
 
 		tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/aSubdivs)} );
 		tex.emplace_back( Vec2f{ 1.f, 0.f} );
 		tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)});
 
 		
+		pos.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
 		pos.emplace_back( Vec3f{ 0.f, prevY*1.1f, prevZ*1.1f } );
-		pos.emplace_back( Vec3f{ 0.f, prevY*1.1f, z*1.1f } );
-		pos.emplace_back( Vec3f{ 0.f, y*1.1f, z*1.1f } );
+		pos.emplace_back( Vec3f{ 0.f, y, z } );
+
+		norm.emplace_back( Vec3f{ 0.f, y, z } );
+		norm.emplace_back( Vec3f{ 0.f, y, z } );
+		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
 
 		tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/aSubdivs)} );
 		tex.emplace_back( Vec2f{ 1.f, 0.f} );
@@ -424,7 +411,7 @@ SimpleMeshData make_cone(std::size_t aSubdivs, Mat44f aPreTransform ) {
 }
 
 
-SimpleMeshData make_partial_cylinder( bool aCapped, std::size_t aSubdivs, std::size_t cutOff, Vec3f aColor, Mat44f aPreTransform ) {
+SimpleMeshData make_partial_cylinder( bool aCapped, std::size_t aSubdivs, std::size_t cutOff, Mat44f aPreTransform ) {
 	std::vector<Vec3f> pos;
 	std::vector<Vec3f> norm;
 	std::vector<Vec2f> tex;
@@ -494,7 +481,32 @@ SimpleMeshData make_partial_cylinder( bool aCapped, std::size_t aSubdivs, std::s
 		tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)} );
 		
 
+		for (float i = 0; i < 2;i++) { //Calc normals
+			pos.emplace_back( Vec3f{ i, y*1.1f, z*1.1f } );
+			pos.emplace_back( Vec3f{ i, y, z } );
+			pos.emplace_back( Vec3f{ i, prevY*1.1f, prevZ*1.1f } );
 
+			norm.emplace_back(Vec3f{ 1.f, 1 - prevY, 1 - prevZ });
+			norm.emplace_back(Vec3f{ 1.f, 0, 0 });
+			norm.emplace_back( Vec3f{ 1.f, 1-y, 1-z } );
+
+			tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/aSubdivs)} );
+			tex.emplace_back( Vec2f{ 1.f, 0.f} );
+			tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)});
+
+			
+			pos.emplace_back( Vec3f{ i, prevY, prevZ } );
+			pos.emplace_back( Vec3f{ i, prevY*1.1f, prevZ*1.1f } );
+			pos.emplace_back( Vec3f{ i, y, z } );
+
+			norm.emplace_back(Vec3f{ 1.f, 1 - prevY, 1 - prevZ });
+			norm.emplace_back(Vec3f{ 1.f, 0, 0 });
+			norm.emplace_back( Vec3f{ 1.f, 1-y, 1-z } );
+
+			tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/aSubdivs)} );
+			tex.emplace_back( Vec2f{ 1.f, 0.f} );
+			tex.emplace_back( Vec2f{ 1.f, (float)((i)/aSubdivs)});
+		}
 
 
 		if (aCapped) {
