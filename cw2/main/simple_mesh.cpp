@@ -213,7 +213,7 @@ GLuint create_vaoM( SimpleMeshData * aMeshData , int number) {
 //Calculate normals of vectory triangles
 std::vector<Vec3f> calcNorms(std::vector<Vec3f> pos) {
 	std::vector<Vec3f> norm;
-	for (int i = 0; i < pos.size(); i+=3) {
+	for (int i = 0; i < pos.size()-2; i+=3) {
 		Vec3f U = pos[i+1] - pos[i];
 		Vec3f V = pos[i+2] - pos[i];
 		float normX = U.y*V.z - U.z*V.y;
@@ -265,10 +265,6 @@ SimpleMeshData make_cube(Vec3f aColor, Mat44f aPreTransform ) {
 		tex.emplace_back( Vec2f{ 1.f, 1.f} );
 		tex.emplace_back( Vec2f{ 0.f, 1.f} );
 	}
-	printf("\nCube:\n");
-	printf("pos.positions.size() = %ld\n", pos.size());
-	printf("tex.positions.size() = %ld\n", tex.size());
-	printf("norm.positions.size() = %ld\n", norm.size());
 
 	
 	for( auto& n : norm ) {

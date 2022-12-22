@@ -105,6 +105,12 @@ namespace
 	};
 }
 
+extern "C"
+{
+	__declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+}
+
+
 int main() try
 {
 	// Initialize GLFW
@@ -321,8 +327,7 @@ int main() try
 			transPos.emplace_back(transPos[transPos.size()-1] + lamp.positions.size());
 		}
 
-	
-	int windowCount = 4;
+	//4 Windows
 	//auto stainWindow = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_rotation_y( 3.141592f) * make_scaling( .1f, 5.f, 4.5f ));//so 48 meter
 	auto stainWindow = make_frame( Vec3f{0.05f, 0.05f, 0.05f}, make_rotation_y( 3.141592f/2) * make_scaling( 5.f, 5.f, 4.5f ));//so 48 meter
 	for (float i = 0; i < 2; i++)
@@ -339,7 +344,7 @@ int main() try
 	chapel.emplace_back(make_change(picture, make_translation( { 0.f, 9.f, 108.8f }) ));
 	int pictures = 1;
 
-	auto backroom = make_partial_building( true, 6, 1, {.02f, .02f, .02f},  make_rotation_y( -3.141592f / 3.f )* make_rotation_z( 3.141592f / 2.f ));
+	auto backroom = make_partial_building( true, 6, 1, make_rotation_y( -3.141592f / 3.f )* make_rotation_z( 3.141592f / 2.f ));
 	chapel.emplace_back(make_change(backroom, make_translation( { 0.f, 0.f, 86.8f })*  make_scaling( 54.f, 40.f, 40.f ) ));
 	//chapel.emplace_back(backroom);
 	int backrooms = 1;
@@ -383,18 +388,13 @@ int main() try
 
 
 	auto aquarium = make_cylinder( true, 18, {.5f, 0.5f, .5f}, make_scaling( 3.f, 10.f, 3.f ) * make_rotation_z( 3.141592f / 2.f ));
-	//auto aquarium = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_rotation_z( -3.141592f / 2.f ) * make_rotation_y( 3.141592f / 2.f ) * make_scaling( .1f, 6.f, 7.62f ));//so 48 meter
 	chapel.emplace_back(make_change(aquarium, make_translation( {10.f, 5.f, 0.f }) ));
 	int aquariumCount = 1;
 
 
-	//auto window = make_cube( Vec3f{0.05f, 0.05f, 0.05f}, make_scaling( 2.f, 2.f, 2.f ));//so 48 meter
-	//chapel.emplace_back(make_change(window, make_translation( {0.f, 0.f, 0.f }) ));
-	//int windowCount = 1;
 	auto mammoth = load_wavefront_obj( "assets/woolly-mammoth-skeleton-obj/woolly-mammoth-skeleton.obj" );
 	auto mammothShapes = getDimensions( "assets/woolly-mammoth-skeleton-obj/woolly-mammoth-skeleton.obj" );
 	mammoth = make_change(mammoth, make_scaling( 0.007f, 0.007f, 0.007f ));
-	//mammoth = make_change(mammoth, make_translation( {0.f, 2.f, 0.f }));
 	float lowest = 5.f;
 	for (int i = 0; i < mammoth.positions.size(); i++)
 		if (lowest > mammoth.positions[i].y)
@@ -402,21 +402,15 @@ int main() try
 	mammoth = (make_change(mammoth,  make_rotation_y( -3.141592f / 2.f )));
 	chapel.emplace_back(make_change(mammoth, make_translation( {25.f, -lowest-.01f, 84.f })));
 
-	//TEST DOOOR
-	auto door = make_cube(Vec3f{ 0.05f, 0.05f, 0.05f }, make_scaling(2.f, 2.f, 2.f));
-	chapel.emplace_back(make_change(door, make_translation( {-1.f, 2.f, 0.f} )));
+	auto door = make_door(Vec3f{ 0.05f, 0.05f, 0.05f }, make_scaling(8.f, 10.f, 0.5f));
+	chapel.emplace_back(make_change(door, make_translation( {-4.f, 0.f, 5.f} )));
 	int doorCount = 1;
 
 
-	int vertexCount = floor.positions.size() + frontWall.positions.size() * wallBits + sideWall.positions.size() * sideWallBits 
-	+ pillar.positions.size() * rows*2;
 	float sunXloc = -1.f;
-	printf("\nNINJA\n");
 	GLuint vao = create_vaoM(&chapel[0], 1 + wallBits + sideWallBits + rows*2+ pictures + backrooms 
 	+ benchCount + roofCount + plutoniumCount + shinyCount + diffuseCount + aquariumCount + 1 + doorCount);
-	//GLuint transparentVao = create_vaoM(&transparent[0], lampCount);
 	GLuint transparentVao = create_vaoM(&transparent[0], transparent.size());
-	printf("\nNINJA2\n");
 
 
 	std::vector<SimpleMeshData> movingObjects;
@@ -674,26 +668,25 @@ int main() try
 
 		for (int i = 0; i < benchCount; i++) {
 			setMaterial(cushion, state.prog);
+			glDrawArrays( GL_TRIANGLES, counter, benchShapes[0]);
 			counter += benchShapes[0];
-			glDrawArrays( GL_TRIANGLES, 0, counter);
 
 
 			setMaterial(wood, state.prog);
+			glDrawArrays( GL_TRIANGLES, counter, benchShapes[1]);
 			counter += benchShapes[1];
-			glDrawArrays( GL_TRIANGLES, 0, counter);
+			glDrawArrays( GL_TRIANGLES, counter, benchShapes[2]);
 			counter += benchShapes[2];
-			glDrawArrays( GL_TRIANGLES, 0, counter);
-
 
 			setMaterial(cushion, state.prog);
+			glDrawArrays( GL_TRIANGLES, counter, benchShapes[3]);
 			counter += benchShapes[3];
-			glDrawArrays( GL_TRIANGLES, 0, counter);
 
 
 			setMaterial(wood, state.prog);
 			for (int l = 4; l < (int)benchShapes.size(); l++) {
+				glDrawArrays( GL_TRIANGLES, counter, benchShapes[l]);
 				counter += benchShapes[l];
-				glDrawArrays( GL_TRIANGLES, 0, counter);
 			}
 		}
 		
@@ -728,7 +721,8 @@ int main() try
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, NULL);
 
-
+		glDrawArrays( GL_TRIANGLES, counter, mammoth.positions.size() * backrooms);
+		counter += mammoth.positions.size() * backrooms;
 
 		//Calculates the angle of rotation for the door
 		doorAngle = doorControl(state, doorAngle, aniStop, increase);
@@ -741,9 +735,6 @@ int main() try
 		model2world = kIdentity44f;
 		projCameraWorld = projection * world2camera * model2world;
 		glUniformMatrix4fv(glGetUniformLocation(prog.programId(), "uProjCameraWorld"), 1, GL_TRUE, projCameraWorld.v);
-
-		counter += mammoth.positions.size()*backrooms;
-		glDrawArrays( GL_TRIANGLES, 0, counter);
 
 
 
