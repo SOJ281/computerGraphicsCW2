@@ -49,7 +49,7 @@ SimpleMeshData load_wavefront_obj( char const* aPath ) {
 				result.attributes.positions[idx.position_index*3+0],
 				result.attributes.positions[idx.position_index*3+1], 
 				result.attributes.positions[idx.position_index*3+2]} );
-			auto const& mat = result.materials[shape.mesh.material_ids[i/3]];
+			//auto const& mat = result.materials[shape.mesh.material_ids[i/3]];
 			//printf("mat.specular[0] = %f,", mat.specular[0]);
 			//printf("%f,", mat.specular[1]);
 			//printf("%f\n", mat.specular[2]);

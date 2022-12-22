@@ -30,6 +30,7 @@ std::vector<Vec3f> calcNorms(std::vector<Vec3f> pos);
 GLuint create_vao( SimpleMeshData const& );
 GLuint create_vaoM( SimpleMeshData* , int number);
 SimpleMeshData make_cube(Vec3f aColor, Mat44f aPreTransform );
+SimpleMeshData make_door(Vec3f aColor, Mat44f aPreTransform);
 SimpleMeshData make_sphere(std::size_t aSubdivs, Mat44f aPreTransform );
 SimpleMeshData invert_normals(SimpleMeshData aM);
 SimpleMeshData make_frame(Vec3f aColor, Mat44f aPreTransform );

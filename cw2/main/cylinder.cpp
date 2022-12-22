@@ -76,8 +76,6 @@ SimpleMeshData make_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f aColor, 
 		prevY = y;
 		prevZ = z;
 	}
-	printf("pos.positions.size() = %ld\n", pos.size());
-	printf("tex.positions.size() = %ld", tex.size());
 	//Vec3f operator*( Mat33f const& aLeft, Vec3f const& aRight )
 	/**/
 	//norm = calcNorms(pos);
@@ -101,7 +99,7 @@ SimpleMeshData make_cylinder( bool aCapped, std::size_t aSubdivs, Vec3f aColor, 
 
 }
 
-SimpleMeshData make_partial_building( bool aCapped, std::size_t aSubdivs, std::size_t cutOff, Vec3f aColor, Mat44f aPreTransform ) {
+SimpleMeshData make_partial_building( bool aCapped, std::size_t aSubdivs, std::size_t cutOff, Mat44f aPreTransform ) {
 	std::vector<Vec3f> pos;
 	std::vector<Vec3f> norm;
 	std::vector<Vec2f> tex;
@@ -295,8 +293,6 @@ SimpleMeshData make_partial_building( bool aCapped, std::size_t aSubdivs, std::s
 	norm = calcNorms(pos);
 
 
-	printf("pos.positions.size() = %ld\n", pos.size());
-	printf("tex.positions.size() = %ld\n", tex.size());
 	for( auto& n : norm ) {
 		Vec3f t = N * n;
 		n = t;
@@ -312,11 +308,10 @@ SimpleMeshData make_partial_building( bool aCapped, std::size_t aSubdivs, std::s
 }
 
 
-SimpleMeshData make_cone( bool aCapped, std::size_t aSubdivs,Vec3f aColor, Mat44f aPreTransform ) {
+SimpleMeshData make_cone(std::size_t aSubdivs, Mat44f aPreTransform ) {
 	std::vector<Vec3f> pos;
 	std::vector<Vec3f> norm;
 	std::vector<Vec2f> tex;
-	printf("PARTIAL\n");
 	Mat33f const N = mat44_to_mat33( transpose(invert(aPreTransform)) );
 
 	float prevY = (float)cos( 0.f );
@@ -538,8 +533,6 @@ SimpleMeshData make_partial_cylinder( bool aCapped, std::size_t aSubdivs, std::s
 
 
 
-	printf("pos.positions.size() = %ld\n", pos.size());
-	printf("tex.positions.size() = %ld\n", tex.size());
 	for( auto& n : norm ) {
 		Vec3f t = N * n;
 		n = t;
