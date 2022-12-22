@@ -21,3 +21,5 @@
 *.obj
 *.make
 /cw2/bin
+/cw2/third_party/x-imgui.vcxproj.filters
+/cw2/imgui.ini
