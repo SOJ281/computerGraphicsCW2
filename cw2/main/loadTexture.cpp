@@ -3,10 +3,8 @@
 #include <stb_image.h>
 #include <stb_image_write.h>
 
-//#include <sys/stat.h>
 #include <unistd.h>
 #include <string>
-//#include <fstream>
 
 #include "../support/error.hpp"
 

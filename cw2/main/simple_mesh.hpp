@@ -34,6 +34,7 @@ SimpleMeshData make_door(Vec3f aColor, Mat44f aPreTransform);
 SimpleMeshData make_sphere(std::size_t aSubdivs, Mat44f aPreTransform );
 SimpleMeshData invert_normals(SimpleMeshData aM);
 SimpleMeshData make_frame(Vec3f aColor, Mat44f aPreTransform );
+Vec3f getMean(SimpleMeshData data);
 
 
 #endif // SIMPLE_MESH_HPP_C6B749D6_C83B_434C_9E58_F05FC27FEFC9

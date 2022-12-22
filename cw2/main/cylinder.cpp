@@ -339,10 +339,6 @@ SimpleMeshData make_cone(std::size_t aSubdivs, Mat44f aPreTransform ) {
 
 
 
-
-
-
-
 		//exterior
 		pos.emplace_back( Vec3f{ 0.f, y*1.1f, z*1.1f } );
 		pos.emplace_back( Vec3f{ 2.2f, 0, 0 } );
@@ -358,16 +354,14 @@ SimpleMeshData make_cone(std::size_t aSubdivs, Mat44f aPreTransform ) {
 
 
 
-
-
 		//Bottom
 		pos.emplace_back( Vec3f{ 0.f, y*1.1f, z*1.1f } );
 		pos.emplace_back( Vec3f{ 0.f, y, z } );
 		pos.emplace_back( Vec3f{ 0.f, prevY*1.1f, prevZ*1.1f } );
 
-		norm.emplace_back(Vec3f{ 0.f, 1 - prevY, 1 - prevZ });
-		norm.emplace_back(Vec3f{ 0.f, 0, 0 });
-		norm.emplace_back( Vec3f{ 0.f, 1-y, 1-z } );
+		//norm.emplace_back(Vec3f{ 0.f, 1 - prevY, 1 - prevZ });
+		//norm.emplace_back(Vec3f{ 0.f, 0, 0 });
+		//norm.emplace_back( Vec3f{ 0.f, 1-y, 1-z } );
 
 		tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/aSubdivs)} );
 		tex.emplace_back( Vec2f{ 1.f, 0.f} );
@@ -378,9 +372,9 @@ SimpleMeshData make_cone(std::size_t aSubdivs, Mat44f aPreTransform ) {
 		pos.emplace_back( Vec3f{ 0.f, prevY*1.1f, prevZ*1.1f } );
 		pos.emplace_back( Vec3f{ 0.f, y, z } );
 
-		norm.emplace_back( Vec3f{ 0.f, y, z } );
-		norm.emplace_back( Vec3f{ 0.f, y, z } );
-		norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
+		//norm.emplace_back( Vec3f{ 0.f, y, z } );
+		//norm.emplace_back( Vec3f{ 0.f, y, z } );
+		//norm.emplace_back( Vec3f{ 0.f, prevY, prevZ } );
 
 		tex.emplace_back( Vec2f{ 1.f, (float)((i+1)/aSubdivs)} );
 		tex.emplace_back( Vec2f{ 1.f, 0.f} );
