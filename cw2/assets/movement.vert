@@ -12,27 +12,26 @@ layout( location = 2 ) in vec2 iTexCoords;
 uniform mat4 uProjCameraWorld;
 uniform mat3 uNormalMatrix;
 
-uniform mat4 rotation;
+
+
+
+uniform vec3 centre;
+
+//Full body
+uniform mat4 scaleMat;
+
+uniform mat4 rotateMat;
+uniform vec3 point;
+
+uniform vec3 translateV;
+
+
 
 
 uniform mat4 rotationLegX;
 uniform mat4 rotationLegZ;
 uniform float legSeg;
 uniform vec3 legCentre;
-
-
-uniform mat4 rotateDoor;
-uniform vec3 point;
-
-uniform vec3 centre;
-
-
-
-uniform mat4 scaleMat;
-uniform mat4 rotateMat;
-uniform vec3 translateV;
-
-
 //layout( location = 5 ) uniform vec3 uLightPos;
 
 out vec3 v2fNormal;
@@ -48,29 +47,23 @@ vec3 scaling(mat4 scalV, vec3 vertex, vec3 pointBy);
 vec3 animation(vec3 vertex);
 
 void main() {
-
-    //vec4 t = rotation * vec4( iPosition - point, 1.0 );
-	//vec3 tPosition = vec3( t.x, t.y, t.z ) + point;
-
-	//vec3 tPosition = rotateByPoint(rotateDoor, point, iPosition);
 	vec3 tPosition = iPosition;
 
-    //tPosition = translate(translateV, tPosition);
-    //tPosition = rotateByPoint(rotateMat, point, tPosition);
 
     tPosition = translateV + tPosition;
 
     tPosition = scaling(scaleMat, tPosition, centre + translateV);
 
+    tPosition = rotateByPoint(rotateMat, tPosition, point) ;
 
     
     for (int i = 0; i < legSeg; i++) {
-        tPosition = rotateByPoint(rotationLegX, tPosition, centre + translateV);
-        tPosition = rotateByPoint(rotationLegZ, tPosition, centre + translateV);
+        tPosition = rotateByPoint(rotationLegX, tPosition, centre + translateV - vec3(0, -i*1, 0));
+        tPosition = rotateByPoint(rotationLegZ, tPosition, centre + translateV - vec3(0, -i*1, 0));
     }
 
 
-    vec3 tNormal = rotate(rotateDoor, iNormal);
+    vec3 tNormal = iNormal * mat3( transpose(inverse(rotateMat)) );
 
 
     v2fTexCoords = iTexCoords;
@@ -82,19 +75,8 @@ void main() {
 
     fragPos = iPosition;
 
-    //lightDistance = length(uLightPos - iPosition);
 }
 
-/*
-vec3 animation(vec3 vertex) {
-    vec3 tPosition = rotateByPoint(rotateMat, point, vertex);
-    tPosition = translate(translateV, tPosition);
-    tPosition = scaling(scaleMat, tPosition);
-
-
-    return tPosition;
-}
-*/
 
 
 //Mapping simple transformations so I don't have to use brain
@@ -108,7 +90,7 @@ vec3 rotateByPoint(mat4 rotV, vec3 vertex, vec3 pointBy) {
 }
 
 vec3 rotate(mat4 rotV, vec3 vertex) {
-    vec4 t = rotation * vec4( vertex, 1.0 );
+    vec4 t = rotV * vec4( vertex, 1.0 );
 	return vec3( t.x, t.y, t.z );
 }
 

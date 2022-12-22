@@ -213,7 +213,7 @@ GLuint create_vaoM( SimpleMeshData * aMeshData , int number) {
 //Calculate normals of vectory triangles
 std::vector<Vec3f> calcNorms(std::vector<Vec3f> pos) {
 	std::vector<Vec3f> norm;
-	for (int i = 0; i < pos.size()-2; i+=3) {
+	for (int i = 0; i < (int)pos.size()-2; i+=3) {
 		Vec3f U = pos[i+1] - pos[i];
 		Vec3f V = pos[i+2] - pos[i];
 		float normX = U.y*V.z - U.z*V.y;
@@ -243,7 +243,7 @@ SimpleMeshData make_cube(Vec3f aColor, Mat44f aPreTransform ) {
 	}
 	//norm = calcNorms(pos);
 	
-	for (int i = 0; i < pos.size(); i+=3) {
+	for (int i = 0; i < (int)pos.size(); i+=3) {
 		Vec3f U = pos[i+1] - pos[i];
 		Vec3f V = pos[i+2] - pos[i];
 		float normX = U.y*V.z - U.z*V.y;
@@ -291,7 +291,7 @@ SimpleMeshData make_frame(Vec3f aColor, Mat44f aPreTransform ) {
 	std::vector<Vec2f> tex;
 	Mat33f const N = mat44_to_mat33( transpose(invert(aPreTransform)));
 
-	int originSize = sizeof(kCubePositions)/sizeof(kCubePositions[0]) / 6;
+	//int originSize = sizeof(kCubePositions)/sizeof(kCubePositions[0]) / 6;
 	//float rightKCube[sizeof(kCubePositions)/sizeof(kCubePositions[0]) * 2];// = new float[kCubePositions.length];
 	/*
 	for (int i = 0; i < originSize; i+=3) {
@@ -347,7 +347,7 @@ SimpleMeshData make_sphere(std::size_t aSubdivs, Mat44f aPreTransform ) {
 	float prevZ = (float)sin(0.f);
 	float PI = 3.1415926f;
 
-	float stackStep = PI / aSubdivs;
+	//float stackStep = PI / aSubdivs;
 	float sectorStep = 2.f * PI / lSubdivs;
 	Mat33f const N = mat44_to_mat33( transpose(invert(aPreTransform)) );
 
@@ -476,4 +476,18 @@ SimpleMeshData make_door(Vec3f aColor, Mat44f aPreTransform ) {
 		p = Vec3f{ t.x, t.y, t.z };
 	}
 	return SimpleMeshData{ std::move(pos), std::move(norm) };
+}
+
+
+Vec3f getMean(SimpleMeshData data) {
+    Vec3f meanVec = Vec3f{0, 0, 0};
+    for (int i = 0; i < (int)data.positions.size(); i++) {
+        meanVec.x += data.positions[i].x;
+        meanVec.y += data.positions[i].y;
+        meanVec.z += data.positions[i].z;
+    }
+    meanVec.x /= (float)data.positions.size();
+    meanVec.y /= (float)data.positions.size();
+    meanVec.z /= (float)data.positions.size();
+    return meanVec;
 }

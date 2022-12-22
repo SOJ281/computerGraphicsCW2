@@ -44,12 +44,20 @@ Material pureWhite = {
 	1.f
 };
 Material lampGlass = {
-	Vec3f{0.4f, 0.4f, 0.4f},
-	Vec3f{0.780392f, 0.568627f, 0.113725f},
+	Vec3f{0.7f, 0.7f, 0.7f},
 	Vec3f{0.6f, 0.6f, 0.6f},
-	Vec3f{0.05f, 0.05f, 0.05f}, //Most objects don't emit light
-	0.8f,
-	1.f
+	Vec3f{0.6f, 0.6f, 0.6f},
+	Vec3f{0.15f, 0.15f, 0.15f}, //Most objects don't emit light
+	0.6f,
+	0.6f
+};
+Material stainedWindow = {
+	Vec3f{0.1f, 0.6f, 0.1f},
+	Vec3f{0.1f, 0.6f, 0.1f},
+	Vec3f{0.1f, 0.6f, 0.1f},
+	Vec3f{0.05f, 0.2f, 0.05f}, //Most objects don't emit light
+	0.3f,
+	0.4f
 };
 
 //For coursework objective
@@ -112,4 +120,5 @@ void setMaterial(Material material, ShaderProgram* prog)
 	glUniform3fv(glGetUniformLocation(prog->programId(), "material.specular"), 1, &material.specular.x);
 	glUniform3fv(glGetUniformLocation(prog->programId(), "material.emissive"), 1, &material.emissive.x);
 	glUniform1f(glGetUniformLocation(prog->programId(), "material.shininess"), material.shininess);
+	glUniform1f(glGetUniformLocation(prog->programId(), "material.opacity"), material.opacity);
 }
