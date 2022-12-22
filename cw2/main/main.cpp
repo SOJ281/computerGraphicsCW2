@@ -814,7 +814,7 @@ int main() try
 		currentMLoc += jelly.centreData.headCount;
 		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "scaleMat"),1, GL_TRUE, kIdentity44f.v);
 
-		//glDrawArrays( GL_TRIANGLES, currentMLoc, jelly.centreData.bodyCount);
+		glDrawArrays( GL_TRIANGLES, currentMLoc, jelly.centreData.bodyCount);
 		currentMLoc += jelly.centreData.bodyCount;
 
 
