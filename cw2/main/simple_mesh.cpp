@@ -87,29 +87,29 @@ GLuint create_vaoM( SimpleMeshData * aMeshData , int number) {
 	GLuint vao = 0;
 
 	int c = number;
-	//printf("posize =(%ld)\n", aMeshData[0].positions.size());
-	//printf("locale =(%ld)\n", aMeshData[0].positions.data());
-	//printf("\ncdl%d\n", c);
+	////printf("posize =(%ld)\n", aMeshData[0].positions.size());
+	////printf("locale =(%ld)\n", aMeshData[0].positions.data());
+	////printf("\ncdl%d\n", c);
 
 	glGenBuffers( 1, &positionVBO );
 	glBindBuffer( GL_ARRAY_BUFFER, positionVBO );
 	int pMax = 0;
 	for (int i = 0; i < c; i++) {
 		pMax += aMeshData[i].positions.size()* sizeof(Vec3f);
-		//printf("pMax = %ld\n", pMax);
+		////printf("pMax = %ld\n", pMax);
 	}
 	glBufferData(GL_ARRAY_BUFFER, pMax, 0, GL_STATIC_DRAW);
 	int pSize = 0;
 	for (int i = 0; i < c; i++) {
-		//printf("pSize%d = %d\n", i, pSize);
-		//printf("locale =(%f)\n", aMeshData[0].positions.data()->x);
-		//printf("size =(%ld)\n", aMeshData[i].positions.size()* sizeof(Vec3f));
+		////printf("pSize%d = %d\n", i, pSize);
+		////printf("locale =(%f)\n", aMeshData[0].positions.data()->x);
+		////printf("size =(%ld)\n", aMeshData[i].positions.size()* sizeof(Vec3f));
 		glBufferSubData(GL_ARRAY_BUFFER, pSize, aMeshData[i].positions.size()* sizeof(Vec3f), aMeshData[i].positions.data());
 		pSize += aMeshData[i].positions.size()* sizeof(Vec3f);
-		//printf("posit");
+		////printf("posit");
 	}
-	printf("\n\npmax = %d\n", pMax);
-	//printf("posdone");
+	//printf("\n\npmax = %d\n", pMax);
+	////printf("posdone");
 
 	/*
 	//Color
@@ -122,7 +122,7 @@ GLuint create_vaoM( SimpleMeshData * aMeshData , int number) {
 	glBufferData(GL_ARRAY_BUFFER, cMax, 0, GL_STATIC_DRAW);
 	int cSize = 0;
 	for (int i = 0; i < c; i++) {
-		//printf("cSize%d = %d\n", i, cSize);
+		////printf("cSize%d = %d\n", i, cSize);
 		glBufferSubData(GL_ARRAY_BUFFER, cSize, aMeshData[i].colors.size()* sizeof(Vec3f), aMeshData[i].colors.data());
 		cSize += aMeshData[i].colors.size()* sizeof(Vec3f);
 	}*/
@@ -149,7 +149,7 @@ GLuint create_vaoM( SimpleMeshData * aMeshData , int number) {
 	for (int i = 0; i < c; i++) {
 		tMax += aMeshData[i].texCoords.size()* sizeof(Vec2f);
 	}
-	printf("tex = %d", tMax);
+	//printf("tex = %d", tMax);
 	glBufferData(GL_ARRAY_BUFFER, tMax, 0, GL_STATIC_DRAW);
 	int tSize = 0;
 	for (int i = 0; i < c; i++) {
@@ -368,7 +368,7 @@ SimpleMeshData make_sphere(std::size_t aSubdivs, Mat44f aPreTransform ) {
 
 		for( float l = 0; l <= lSubdivs; ++l ) {
 			//float dp = i/(lSubdivs);
-			//printf("%6.4lf,", dp);
+			////printf("%6.4lf,", dp);
 			//float sectorAngle = 2.f*3.1415926f*((float)l/((float)lSubdivs));
 			float sectorAngle = 3.1415926f/2.f - l*sectorStep;
 			float nx = x*(float)cosf(sectorAngle);
@@ -380,8 +380,8 @@ SimpleMeshData make_sphere(std::size_t aSubdivs, Mat44f aPreTransform ) {
 			
 			//float z = (float)sin(sectorAngle);
 
-			printf("nprevX%6.4lf\n", nprevX);
-			printf("nx%6.4lf\n\n", nx);
+			//printf("nprevX%6.4lf\n", nprevX);
+			//printf("nx%6.4lf\n\n", nx);
 
 			pos.emplace_back( Vec3f{ nprevX, nprevY, prevZ } );
 			pos.emplace_back( Vec3f{ nprevX, ny, z } );
@@ -490,4 +490,29 @@ Vec3f getMean(SimpleMeshData data) {
     meanVec.y /= (float)data.positions.size();
     meanVec.z /= (float)data.positions.size();
     return meanVec;
+}
+
+
+Vec3f getLowest(SimpleMeshData data) {
+    Vec3f lowVec = Vec3f{0, 100, 0};
+    for (int i = 0; i < (int)data.positions.size(); i++) {
+		if (data.positions[i].y < lowVec.y)
+        lowVec.x = data.positions[i].x;
+        lowVec.y = data.positions[i].y;
+        lowVec.z = data.positions[i].z;
+    }
+
+    return lowVec;
+}
+
+Vec3f getHighest(SimpleMeshData data) {
+    Vec3f highVec = Vec3f{0, -100, 0};
+    for (int i = 0; i < (int)data.positions.size(); i++) {
+		if (data.positions[i].y < highVec.y)
+        highVec.x = data.positions[i].x;
+        highVec.y = data.positions[i].y;
+        highVec.z = data.positions[i].z;
+    }
+
+    return highVec;
 }

@@ -50,12 +50,20 @@ unsigned int createTexture(int width, int height, uint8_t * pixels) {
 	//std::string number = std::to_string(i);
     int fullSize = width * height * CHANNEL_NUM;
     uint8_t* reversedPixels = new uint8_t[fullSize];
-    //for (int i = 0; i < windowWidth * windowHeight * 3; i++)
+    for (int i = 0; i < height ; i++) {
+        for (int l = 0; l < width * CHANNEL_NUM; l += 1) {
+            reversedPixels[(height - i-1)*width* CHANNEL_NUM  + l] = pixels[(i)*width* CHANNEL_NUM + l];
+            //reversedPixels[(height - i-1)*width* CHANNEL_NUM  + l] = pixels[(i)*width* CHANNEL_NUM + l];
+            //reversedPixels[(height - i-1)*width* CHANNEL_NUM  + l + 1] = pixels[(i)*width* CHANNEL_NUM + l + 1];
+            //reversedPixels[(height - i-1)*width* CHANNEL_NUM  + l + 2] = pixels[(i)*width* CHANNEL_NUM + l + 2];
+        }
+    }
+    /*
     for (int i = 0; i < fullSize; i += 3) {
         reversedPixels[fullSize - i - 3] = pixels[i];
         reversedPixels[fullSize - i - 2] = pixels[i+1];
         reversedPixels[fullSize - i -1] = pixels[i+2];
-    }
+    }*/
 
     int c = 1;
     //char* fileName = "screenshot"+ (char*)c+".png";
