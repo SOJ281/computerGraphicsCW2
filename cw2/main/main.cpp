@@ -399,7 +399,7 @@ int main() try
 
 
 	auto aquarium = make_cylinder( true, 18, {.5f, 0.5f, .5f}, make_scaling( 3.f, 10.f, 3.f ) * make_rotation_z( 3.141592f / 2.f ));
-	chapel.emplace_back(make_change(aquarium, make_translation( {10.f, 5.f, 0.f }) ));
+	chapel.emplace_back(make_change(aquarium, make_translation( {-25.f, 5.f, 86.f }) ));
 	int aquariumCount = 1;
 
 
@@ -501,9 +501,12 @@ int main() try
 
 		movementAngle += dt * kPi_ * 0.05f;
 		if (movementAngle >= 2*kPi_)
-			movementAngle -= 0;
+			movementAngle -= 2*kPi_;
 
 
+		spotLightData[0].direction = Vec3f{ .5f + 2*movementAngle/(kPi_) , 1.f, 0.f };
+
+ 
 		
 
 
