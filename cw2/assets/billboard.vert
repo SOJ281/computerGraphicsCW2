@@ -34,11 +34,14 @@ void main() {
     v2fTexCoords = iTexCoords;
 
 
-
+    vec3 cViewPos = viewPos - center;
+    tPosition = tPosition - center; 
+    vec3 cCenter = vec3(0, 0, 0);
     //vec3 from_vector = top - bottom;
-    vec3 from_vector = normalize(vec3(center.x+1, center.y, center.z));
+    //vec3 from_vector = normalize(vec3(center.x+1, center.y, center.z));
+    vec3 from_vector = normalize(vec3(1, 0, 0));
     //vec3 from_vector = normalize(center - viewPos);
-    vec3 to_vector = normalize(viewPos - center);
+    vec3 to_vector = normalize(cViewPos - cCenter);
 
     float cosa = dot(from_vector,to_vector);
     clamp(cosa, -1.f, 1.f);
@@ -48,9 +51,9 @@ void main() {
     //mat4 rotate_matrix = make_rotation_x( angle ) * vec4( axis, 1.0 );
     mat4 rotate_matrix = rotationMatrix(axis, angle);
 
-    tPosition = vec3(vec4( tPosition - center, 1.0 ) * rotate_matrix) + center;
+    tPosition = vec3(vec4( tPosition, 1.0 ) * rotate_matrix);
 
-    gl_Position = uProjCameraWorld * (vec4( tPosition, 1.0 ));
+    gl_Position = uProjCameraWorld * (vec4( tPosition + center, 1.0 ));
 
 
     v2fNormal = iNormal;
