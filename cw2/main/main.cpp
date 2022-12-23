@@ -1,6 +1,3 @@
-#include <imgui.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_opengl3.h>
 #include <glad.h>
 #include <GLFW/glfw3.h>
 
@@ -454,24 +451,12 @@ int main() try
 
 	OGL_CHECKPOINT_ALWAYS();
 
-
-	// Set up ImGUI
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO(); (void)io;
-	ImGui::StyleColorsDark;
-	ImGui_ImplGlfw_InitForOpenGL(window, true);
-	ImGui_ImplOpenGL3_Init("#version 430");
-
 	// Main loop
 	while( !glfwWindowShouldClose( window ) )
 	{
 		// Let GLFW process events
 		glfwPollEvents();
 
-		//ImGui_ImplOpenGL3_NewFrame();
-		//ImGui_ImplGlfw_NewFrame();
-		//ImGui::NewFrame();
 		
 		// Check if window was resized.
 		float fbwidth, fbheight;
@@ -905,12 +890,6 @@ int main() try
 
 		}
 
-		//ImGui::Begin("ImGUI window");
-		//ImGui::Text("Text");
-		//ImGui::End();
-
-		//ImGui::Render();
-		//ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 		glUseProgram( 0 );
 
@@ -923,10 +902,6 @@ int main() try
 	// Cleanup.
 	state.prog = nullptr;
 	state.moveProg = nullptr;
-	//additional cleanup
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	ImGui::DestroyContext();
 	
 	return 0;
 }

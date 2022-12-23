@@ -4,7 +4,6 @@ includedirs( "stb/include" );
 includedirs( "glad/include" );
 includedirs( "glfw/include" );
 includedirs( "rapidobj/include" );
-includedirs( "imgui" );
 
 project( "x-stb" )
 	kind "StaticLib"
@@ -96,15 +95,5 @@ project( "x-rapidobj" )
 	location "."
 
 	files( "rapidobj/include/**.h*" )
-
-project("x-imgui")
-	kind "StaticLib"
-
-	location "."
-
-	files{
-		"imgui/**.h*",
-		"imgui/**.c*"
-	};
 
 --EOF
