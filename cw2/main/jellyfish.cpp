@@ -47,14 +47,14 @@ SimpleMeshData createLeg(Mat44f aPreTransform) {
         SimpleMeshData segment = make_cylinder( true, 18, {.5f, 0.5f, .5f}, make_rotation_z( 3.141592f / 2.f ));
         segment = make_change(segment, make_translation( {0.f, -.1f-i*.1f, 0.f }));
         leg = concatenate( leg, segment );
-		//printf("seg%ld\n", segment.positions.size());
+		////printf("seg%ld\n", segment.positions.size());
     }
 	/*
-	printf("leg%ld\n", leg.positions.size());
+	//printf("leg%ld\n", leg.positions.size());
 	for (int i = 0; i < leg.positions.size(); i++) {
-		printf("LEGGY=%f,%f,%f\n", leg.positions[i].x, leg.positions[i].y, leg.positions[i].z);
+		//printf("LEGGY=%f,%f,%f\n", leg.positions[i].x, leg.positions[i].y, leg.positions[i].z);
 	}
-	printf("\n\n\n");
+	//printf("\n\n\n");
 	*/
     return leg;
 

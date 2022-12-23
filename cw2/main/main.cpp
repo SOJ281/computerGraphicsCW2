@@ -68,6 +68,7 @@ namespace
 			Vec3f cameraUp = { 0.f, 1.f, 0.f };
 
 		} camControl;
+		int enterPressed = 1;
 
 		//Animation control struct.
 		struct AnimCtrl_
@@ -367,7 +368,7 @@ int main() try
 	benches = make_change(benches, make_rotation_y( 3.141592f ) );
 	benches = make_change(benches, make_translation( {-8.f, 0.f, 15.f }) );
 	int benchCount = 12;
-	//printf("benches ", benches.positions.size());
+	////printf("benches ", benches.positions.size());
 	for (float i = 0; i < 6; i++)
 		for (float l = 0; l < 2; l++)
 			chapel.emplace_back(make_change(benches, make_translation( {29.f * l, 0.f, i*6.f }) ));
@@ -404,7 +405,7 @@ int main() try
 
 	auto mammoth = load_wavefront_obj( "assets/woolly-mammoth-skeleton-obj/woolly-mammoth-skeleton.obj" );
 	auto mammothShapes = getDimensions( "assets/woolly-mammoth-skeleton-obj/woolly-mammoth-skeleton.obj" );
-	printf("mammothShapes = %ld\n", mammothShapes.size());
+	//printf("mammothShapes = %ld\n", mammothShapes.size());
 	mammoth = make_change(mammoth, make_scaling( 0.007f, 0.007f, 0.007f ));
 	float lowest = 5.f;
 	for (int i = 0; i < (int)mammoth.positions.size(); i++)
@@ -417,7 +418,7 @@ int main() try
 	chapel.emplace_back(make_change(door, make_translation( {-4.f, 0.f, 5.f} )));
 	int doorCount = 1;
 
-	printf("Chapel size=%ld", chapel.size());
+	//printf("Chapel size=%ld", chapel.size());
 
 	float sunXloc = -1.f;
 	GLuint vao = create_vaoM(&chapel[0], chapel.size());
@@ -431,7 +432,7 @@ int main() try
 
 
 	auto sprite = make_frame( Vec3f{0.05f, 0.05f, 0.05f}, make_rotation_y( 3.141592f/2));//so 48 meter
-	printf("sprite=%f", getMean(sprite));
+	//printf("sprite=%f", getMean(sprite));
 	std::vector<SimpleMeshData> congregants;
 	std::vector<Vec3f> centers;
 	//congregants.emplace_back(sprite);
@@ -440,11 +441,11 @@ int main() try
 	for (float i = 0; i < 12; i++) {
 		auto sp = make_frame( Vec3f{0.05f, 0.05f, 0.05f}, make_rotation_y( 3.141592f/2));//so 48 meter
 		sp = make_change(sp, make_translation( {29.f * ((int)i%2) -8.f, 6.f, i*3.f - 12.f} ));
-		printf("centers=%f", getMean(sp).x);
+		//printf("centers=%f", getMean(sp).x);
 
 		congregants.emplace_back(sp);
 		centers.emplace_back(getMean(sp));
-		//printf("centers=%f", centers[i]);
+		////printf("centers=%f", centers[i]);
 	}
 
 	GLuint congregantsVao = create_vaoM(&congregants[0], 12);
@@ -569,8 +570,8 @@ int main() try
 		
 		std::map<float, int> sorted;
 		Vec3f camPosi = Vec3f {state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z };
-		//printf("campos: (%f, %f, %f)\n", state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z);
-		//printf("campos: (%f, %f, %f)\n", transLocs[0].x, transLocs[0].y, transLocs[0].z);
+		////printf("campos: (%f, %f, %f)\n", state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z);
+		////printf("campos: (%f, %f, %f)\n", transLocs[0].x, transLocs[0].y, transLocs[0].z);
 		
         for (unsigned int i = 0; i < transLocs.size(); i++) {
             float distance = length(camPosi + transLocs[i]);
@@ -607,7 +608,7 @@ int main() try
 		glUniform3f( glGetUniformLocation(prog.programId(), "uLightDiffuse"), .2f, .2f, .2f ); //lightDiffuse
 		glUniform3f( glGetUniformLocation(prog.programId(), "uSceneAmbient"), 0.1f, 0.1f, 0.1f ); //uSceneAmbient
 		glUniform3f( glGetUniformLocation(prog.programId(), "uSpecular"), .5f, .4f, .05f ); //uSceneAmbient
-		//printf("normalMatrix: (%f, %f, %f)\n", state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z);
+		////printf("normalMatrix: (%f, %f, %f)\n", state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z);
 		glUniform3f(glGetUniformLocation(prog.programId(), "viewPos"), state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z ); //uSceneAmbient
 
 		//glUniform3f( glGetUniformLocation(prog.programId(), "rotateDoor"), make_rotation_x( 0 ) );
@@ -701,12 +702,12 @@ int main() try
         glBindTexture(GL_TEXTURE_2D, 0);
 		//counter += benches.positions.size()*benchCount;
 		//glDrawArrays( GL_TRIANGLES, 0, counter);
-		//printf("\nbencSize = %ld", benches.positions.size());
+		////printf("\nbencSize = %ld", benches.positions.size());
 		int bCoun = 0;
 		for (int l = 0; l < (int)benchShapes.size(); l++) {
 			bCoun += benchShapes[l];
 		}
-		//printf("\nbCoun = %d", bCoun);
+		////printf("\nbCoun = %d", bCoun);
 
 
 		for (int i = 0; i < benchCount; i++) {
@@ -830,7 +831,7 @@ int main() try
 
 
 		glUniform3fv(glGetUniformLocation(moveProg.programId(), "centre"),1, &jelly.centreData.head.x);
-		//printf("projection: (%f, %f, %f)\n", jelly.centreData.head.x, jelly.centreData.head.y, jelly.centreData.head.z);
+		////printf("projection: (%f, %f, %f)\n", jelly.centreData.head.x, jelly.centreData.head.y, jelly.centreData.head.z);
 
 
 		//head
@@ -890,8 +891,8 @@ int main() try
 			
 			glUniform3fv(glGetUniformLocation(billProg.programId(), "center"),1,  &centers[i].x); //uSceneAmbient
 			glDrawArrays( GL_TRIANGLES, spSize*i, spSize);
-			printf("RCS=%f,%f,%f\n", centers[i].x, centers[i].y, centers[i].z);
-			printf("state.camControl.cameraPos=%f,%f,%f\n", state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z);
+			//printf("RCS=%f,%f,%f\n", centers[i].x, centers[i].y, centers[i].z);
+			////printf("state.camControl.cameraPos=%f,%f,%f\n", state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z);
 		}
 
 		glBindVertexArray( 0 );
@@ -1053,12 +1054,15 @@ namespace
 					else if (GLFW_RELEASE == aAction)
 						state->camControl.actionSlowDown = false;
 				}
-				if (GLFW_KEY_ENTER == aKey) {
+				if (GLFW_KEY_ENTER == aKey && state->enterPressed != 1) {
+					state->enterPressed = 1;
 					GLint windowWidth, windowHeight;
 					glfwGetWindowSize(aWindow, &windowWidth, &windowHeight);
 					uint8_t* pixels = new uint8_t[windowWidth * windowHeight * 3];
 					glReadPixels(0, 0, windowWidth, windowHeight, GL_RGB, GL_UNSIGNED_BYTE, pixels);
 					createTexture(windowWidth, windowHeight, pixels);
+				} else if (GLFW_KEY_ENTER != aKey) {
+					state->enterPressed = 0;
 				}
 			}
 
