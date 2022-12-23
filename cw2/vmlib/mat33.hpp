@@ -81,4 +81,20 @@ Mat33f mat44_to_mat33( Mat44f const& aM )
 	return ret;
 }
 
+inline
+Mat44f mat33_to_mat44(Mat33f const& aM)
+{
+	Mat44f ret;
+	for (std::size_t i = 0; i < 3; ++i)
+	{
+		for (std::size_t j = 0; j < 3; ++j)
+			ret(i, j) = aM(i, j);
+	}
+	for (std::size_t i = 0; i < 4; ++i)
+	{
+		ret(i, 3) = 0;
+		ret(3, i) = 0;
+	}
+	return ret;
+}
 #endif // MAT33_HPP_61F3107B_CBE4_48DE_9F39_EA959B4BF694
