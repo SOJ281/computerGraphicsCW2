@@ -36,7 +36,7 @@ void main() {
 
 
     //vec3 from_vector = top - bottom;
-    vec3 from_vector = normalize(vec3(1, 0, 0));
+    vec3 from_vector = normalize(vec3(center.x+1, center.y, center.z));
     vec3 to_vector = normalize(viewPos - center);
 
     float cosa = dot(from_vector,to_vector);

@@ -21,6 +21,7 @@ uniform sampler2D sprite;
 
 void main() {
 
-
+    if(texture(sprite, v2fTexCoords).a < 0.1)
+        discard;
     oColor = texture(sprite, v2fTexCoords);
 }

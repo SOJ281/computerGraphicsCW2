@@ -82,7 +82,6 @@ void main() {
 
 
     vec3 reflectDir = reflect(-uLightDir, normal); //R = 2 *dot(L,N)*N - L
-    //vec3 reflectDir = -uLightDir - 2 * dot(normal, -uLightDir) * normal; //R
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess * 100); // dot(R, V) **a
 
 
