@@ -14,12 +14,18 @@ SimpleMeshData concatenate( SimpleMeshData aM, SimpleMeshData const& aN )
 
 SimpleMeshData make_change( SimpleMeshData aM, Mat44f aPreTransform ) {
 	SimpleMeshData newMesh = aM;
+	Mat33f const N = mat44_to_mat33( transpose(invert(aPreTransform)));
 
 	for( auto& p : newMesh.positions ) {
 		Vec4f p4{ p.x, p.y, p.z, 1.f };
 		Vec4f t = aPreTransform * p4;
 		t /= t.w;
 		p = Vec3f{ t.x, t.y, t.z };
+	}
+	for( auto& n : newMesh.normals ) {
+		Vec3f t = N * n;
+		//t /= t.w;
+		n = t;
 	}
 	return newMesh;
 }
@@ -223,6 +229,8 @@ std::vector<Vec3f> calcNorms(std::vector<Vec3f> pos) {
 		norm.emplace_back( Vec3f{ normX, normY, normZ } );
 		norm.emplace_back( Vec3f{ normX, normY, normZ } );
 	}
+
+
 	return norm;
 }
 
