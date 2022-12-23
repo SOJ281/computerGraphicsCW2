@@ -70,11 +70,11 @@ Material uranium = {
 	1.f
 };
 Material shinyShiny = {
-	Vec3f{.01f, .01f, .01f},
+	Vec3f{.1f, .1f, .1f},
 	Vec3f{0.5f, 0.5f, 0.f},
-	Vec3f{1.f, 1.f, 0.f},
+	Vec3f{1.f, 1.f, 1.f},
 	Vec3f{0.f, 0.f, 0.f},
-	.4f,
+	1.8f,
 	1.f
 };
 Material highDiffuse = {

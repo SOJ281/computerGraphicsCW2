@@ -10,12 +10,11 @@ layout( location = 1 ) in vec3 iNormal;
 layout( location = 2 ) in vec2 iTexCoords;
 
 uniform mat4 uProjCameraWorld;
-uniform mat3 uNormalMatrix;
-uniform mat4 rotation;
-uniform mat4 world2camera;//viewMatrix
-uniform mat4 projection;//projectionMatrix
 
-uniform vec3 point;
+
+uniform vec3 center;
+uniform vec3 viewPos;
+uniform vec3 direction;
 
 
 
@@ -23,6 +22,7 @@ out vec3 v2fNormal;
 out vec2 v2fTexCoords;
 out vec3 fragPos;
 
+mat4 rotationMatrix(vec3 axis, float angle);
 
 void main() {
 
@@ -33,21 +33,39 @@ void main() {
 
     v2fTexCoords = iTexCoords;
 
-    vec3 CameraRight_worldspace = vec3(world2camera[0][0], world2camera[1][0], world2camera[2][0]);
-    vec3 CameraUp_worldspace = vec3(world2camera[0][1], world2camera[1][1], world2camera[2][1]);
 
 
-    //gl_Position = uProjCameraWorld * vec4( tPosition, 1.0 );
-    
-    gl_Position =  uProjCameraWorld * vec4( vec3(0,2,0)
-    + CameraRight_worldspace * tPosition.x 
-    + CameraUp_worldspace * tPosition.y , 1.0 );
-    //gl_Position /= gl_Position.w;
-    //gl_Position.xy += tPosition.xy * vec2(0.2, 0.05);
+    //vec3 from_vector = top - bottom;
+    vec3 from_vector = normalize(vec3(1, 0, 0));
+    vec3 to_vector = normalize(viewPos - center);
+
+    float cosa = dot(from_vector,to_vector);
+    clamp(cosa, -1.f, 1.f);
+    vec3 axis = cross(from_vector,to_vector); 
+    float angle = acos(cosa);
+    //mat4 rotate_matrix = rotate(mat4(1),angle,axis);
+    //mat4 rotate_matrix = make_rotation_x( angle ) * vec4( axis, 1.0 );
+    mat4 rotate_matrix = rotationMatrix(axis, angle);
+
+    tPosition = vec3(vec4( tPosition - center, 1.0 ) * rotate_matrix) + center;
+
+    gl_Position = uProjCameraWorld * (vec4( tPosition, 1.0 ));
 
 
-
-    v2fNormal = normalize(uNormalMatrix * iNormal);
+    v2fNormal = iNormal;
     fragPos = iPosition;
 
+}
+
+mat4 rotationMatrix(vec3 axis, float angle)
+{
+    axis = normalize(axis);
+    float s = sin(angle);
+    float c = cos(angle);
+    float oc = 1.0 - c;
+    
+    return mat4(oc * axis.x * axis.x + c,           oc * axis.x * axis.y - axis.z * s,  oc * axis.z * axis.x + axis.y * s,  0.0,
+                oc * axis.x * axis.y + axis.z * s,  oc * axis.y * axis.y + c,           oc * axis.y * axis.z - axis.x * s,  0.0,
+                oc * axis.z * axis.x - axis.y * s,  oc * axis.y * axis.z + axis.x * s,  oc * axis.z * axis.z + c,           0.0,
+                0.0,                                0.0,                                0.0,                                1.0);
 }

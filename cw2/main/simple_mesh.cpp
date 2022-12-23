@@ -491,3 +491,28 @@ Vec3f getMean(SimpleMeshData data) {
     meanVec.z /= (float)data.positions.size();
     return meanVec;
 }
+
+
+Vec3f getLowest(SimpleMeshData data) {
+    Vec3f lowVec = Vec3f{0, 100, 0};
+    for (int i = 0; i < (int)data.positions.size(); i++) {
+		if (data.positions[i].y < lowVec.y)
+        lowVec.x = data.positions[i].x;
+        lowVec.y = data.positions[i].y;
+        lowVec.z = data.positions[i].z;
+    }
+
+    return lowVec;
+}
+
+Vec3f getHighest(SimpleMeshData data) {
+    Vec3f highVec = Vec3f{0, -100, 0};
+    for (int i = 0; i < (int)data.positions.size(); i++) {
+		if (data.positions[i].y < highVec.y)
+        highVec.x = data.positions[i].x;
+        highVec.y = data.positions[i].y;
+        highVec.z = data.positions[i].z;
+    }
+
+    return highVec;
+}
