@@ -16,12 +16,13 @@ uniform mat4 uProjCameraWorld;
 uniform mat3 uNormalMatrix;
 uniform vec3 viewPos;
 
+//Direction light
 uniform vec3 uLightDir;
 uniform vec3 uLightDiffuse;
 uniform vec3 uSceneAmbient;
 uniform vec3 uSpecular;
 
-
+//Spotlight
 struct SpotLight {
     vec3 position;
     vec3 direction;
@@ -37,7 +38,7 @@ struct SpotLight {
 };
 uniform SpotLight spotLights[1];
 
-
+//point light
 struct PointLight {
     vec3 position;
     
@@ -102,7 +103,7 @@ void main() {
 
 
 
-// calculates the color when using a point light.
+
 vec3 calcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
     vec3 lightDir = normalize(light.position - fragPos);
 
@@ -128,7 +129,6 @@ vec3 calcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
 }
 
 
-// calculates the color when using a spot light.
 vec3 calcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
     vec3 lightDir = normalize(light.position - fragPos);
     float theta = dot(lightDir, normalize(-light.direction));
