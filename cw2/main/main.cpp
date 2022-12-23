@@ -64,7 +64,7 @@ namespace
 			float lastX, lastY;
 			// Camera position, direction faced and up vector.
 			Vec3f cameraPos = { 0.f, -3.f, 10.f };
-			Vec3f cameraFront = {0.f, 0.f, 1.f};
+			Vec3f cameraFront = {0.f, 0.f, -1.f};
 			Vec3f cameraUp = { 0.f, 1.f, 0.f };
 
 		} camControl;
@@ -812,7 +812,7 @@ int main() try
 		currentMLoc += jelly.centreData.headCount;
 		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "scaleMat"),1, GL_TRUE, kIdentity44f.v);
 
-		//glDrawArrays( GL_TRIANGLES, currentMLoc, jelly.centreData.bodyCount);
+		glDrawArrays( GL_TRIANGLES, currentMLoc, jelly.centreData.bodyCount);
 		currentMLoc += jelly.centreData.bodyCount;
 
 
@@ -1060,6 +1060,8 @@ namespace
 						state->aniControl.speedUp = true;
 					else if (GLFW_PRESS == aAction && state->aniControl.speedUp == true)
 						state->aniControl.speedUp = false;
+					if (GLFW_PRESS == aAction && state->aniControl.slowDown == true)
+						state->aniControl.slowDown = false;
 				}
 				if (GLFW_KEY_K == aKey)
 				{
@@ -1074,6 +1076,8 @@ namespace
 						state->aniControl.slowDown = true;
 					else if (GLFW_PRESS == aAction && state->aniControl.slowDown == true)
 						state->aniControl.slowDown = false;
+					if (GLFW_PRESS == aAction && state->aniControl.speedUp == true)
+						state->aniControl.speedUp = false;
 				}
 			}
 		}
