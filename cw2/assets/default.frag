@@ -98,7 +98,7 @@ void main() {
     //Adding spotLight
     result += calcSpotLight(spotLights[0], normal, fragPos, viewDir);  
 
-    oColor = vec4(result, material.opacity);
+    oColor = vec4(result, material.opacity );
 }
 
 

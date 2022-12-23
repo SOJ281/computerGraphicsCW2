@@ -429,12 +429,24 @@ int main() try
 	GLuint movingVao = create_vaoM(&movingObjects[0], 1);
 
 
-
-	std::vector<SimpleMeshData> congregants;
-	std::vector<Vec3f> direction;
 	auto sprite = make_frame( Vec3f{0.05f, 0.05f, 0.05f}, make_rotation_y( 3.141592f/2));//so 48 meter
-	congregants.emplace_back(make_change(sprite, make_translation( {0.f, 2.f, 0.f} )));
-	GLuint congregantsVao = create_vaoM(&congregants[0], 1);
+	printf("sprite=%f", getMean(sprite));
+	std::vector<SimpleMeshData> congregants;
+	std::vector<Vec3f> centers;
+	//congregants.emplace_back(sprite);
+	congregants.emplace_back(sprite);
+	centers.emplace_back(getMean(sprite));
+	for (float i = 0; i < 12; i++) {
+		auto sp = make_frame( Vec3f{0.05f, 0.05f, 0.05f}, make_rotation_y( 3.141592f/2));//so 48 meter
+		sp = make_change(sp, make_translation( {29.f * ((int)i%2) -8.f, 6.f, i*3.f - 12.f} ));
+		printf("centers=%f", getMean(sp).x);
+
+		congregants.emplace_back(sp);
+		centers.emplace_back(getMean(sp));
+		//printf("centers=%f", centers[i]);
+	}
+
+	GLuint congregantsVao = create_vaoM(&congregants[0], 12);
 
 
 	OGL_CHECKPOINT_ALWAYS();
@@ -500,7 +512,7 @@ int main() try
 
 		movementAngle += dt * kPi_ * 0.05f;
 		if (movementAngle >= 2*kPi_)
-			movementAngle -= kPi_;
+			movementAngle -= 0;
 
 
 		
@@ -795,7 +807,7 @@ int main() try
 		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotationLegX"),1, GL_TRUE, kIdentity44f.v);
 		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "rotationLegZ"),1, GL_TRUE, kIdentity44f.v);
 
-		Vec3f bounce = Vec3f{0.f, 6.f *(float)sin(angle), 0.f };
+		Vec3f bounce = Vec3f{0.f, 6.f *(float)sin(headAngle) + 7.f, 0.f };
 		glUniform3fv(glGetUniformLocation(moveProg.programId(), "translateV"),1, &bounce.x);
 
 
@@ -848,18 +860,21 @@ int main() try
 
 		glUseProgram( billProg.programId() );
 		glBindVertexArray( congregantsVao );
-		glUniform3f(glGetUniformLocation(billProg.programId(), "viewPos"), state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z ); //uSceneAmbient
-//projection * world2camera
-		glUniformMatrix4fv(glGetUniformLocation(billProg.programId(), "world2camera"), 1, GL_TRUE, world2camera.v );
-		glUniformMatrix4fv(glGetUniformLocation(billProg.programId(), "projection"), 1, GL_TRUE, projection.v );
 		glUniformMatrix4fv(glGetUniformLocation(billProg.programId(), "uProjCameraWorld"), 1, GL_TRUE, projCameraWorld.v );
-		glUniformMatrix3fv(glGetUniformLocation(billProg.programId(), "uNormalMatrix"),1, GL_TRUE, normalMatrix.v);
 		glUniform1i(glGetUniformLocation(billProg.programId(), "sprite"), 1); //lightDir uLightDir
+		glUniform3fv(glGetUniformLocation(billProg.programId(), "viewPos"),1,  &state.camControl.cameraPos.x ); //uSceneAmbient
 
+		int spSize = sprite.positions.size();
+		for (int i = 0; i < 1; i++) {
 
-		glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, eyeball);
-		glDrawArrays( GL_TRIANGLES, 0, sprite.positions.size());
+			glActiveTexture(GL_TEXTURE1);
+        	glBindTexture(GL_TEXTURE_2D, eyeball);
+			
+			glUniform3fv(glGetUniformLocation(billProg.programId(), "center"),1,  &centers[i].x); //uSceneAmbient
+			glDrawArrays( GL_TRIANGLES, spSize*i, spSize);
+			printf("RCS=%f,%f,%f\n", centers[i].x, centers[i].y, centers[i].z);
+			printf("state.camControl.cameraPos=%f,%f,%f\n", state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z);
+		}
 
 		glBindVertexArray( 0 );
 
@@ -1111,6 +1126,20 @@ namespace
 
 			state->camControl.lastX = float(aX);
 			state->camControl.lastY = float(aY);
+
+			if (state->camControl.cameraActive) {
+				GLint windowWidth, windowHeight;
+				glfwGetWindowSize(aWindow, &windowWidth, &windowHeight);
+				if ( aX < 10 || aX > windowWidth - 10 ) { 
+					state->camControl.lastX = windowWidth/2;   
+					state->camControl.lastY = int(aY);  
+					glfwSetCursorPos(aWindow, windowWidth/2, int(aY));
+				} else if (aY < 10 || aY > windowHeight - 10) {
+					state->camControl.lastX = float(aX);
+					state->camControl.lastY = windowHeight/2;
+					glfwSetCursorPos(aWindow, int(aX),windowHeight/2);
+				}
+			}
 		}
 	}
 
