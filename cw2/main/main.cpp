@@ -22,14 +22,13 @@
 #include "defaults.hpp"
 #include "cylinder.hpp"
 #include "jellyfish.hpp"
-//#include "loadcustom.hpp"
 #include "loadTexture.hpp"
 #include "loadobj.hpp"
 #include "materials.hpp"
+
 #include <string>
 #include <cstring>
 #include <stb_image.h>
-//#include <stb_image/stb_image.h>
 #include <map>
 
 
@@ -55,6 +54,7 @@ namespace
 		ShaderProgram* prog;
 		ShaderProgram* moveProg;
 		ShaderProgram* billProg;
+		ShaderProgram* skyProg;
 
 		struct CamCtrl_
 		{
@@ -119,6 +119,51 @@ namespace
 	{
 		~GLFWWindowDeleter();
 		GLFWwindow* window;
+	};
+
+	float skyboxVertices[] = {
+		// positions          
+		-1.0f,  1.0f, -1.0f,
+		-1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+		 1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+
+		-1.0f, -1.0f,  1.0f,
+		-1.0f, -1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f,  1.0f,
+		-1.0f, -1.0f,  1.0f,
+
+		 1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+
+		-1.0f, -1.0f,  1.0f,
+		-1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f, -1.0f,  1.0f,
+		-1.0f, -1.0f,  1.0f,
+
+		-1.0f,  1.0f, -1.0f,
+		 1.0f,  1.0f, -1.0f,
+		 1.0f,  1.0f,  1.0f,
+		 1.0f,  1.0f,  1.0f,
+		-1.0f,  1.0f,  1.0f,
+		-1.0f,  1.0f, -1.0f,
+
+		-1.0f, -1.0f, -1.0f,
+		-1.0f, -1.0f,  1.0f,
+		 1.0f, -1.0f, -1.0f,
+		 1.0f, -1.0f, -1.0f,
+		-1.0f, -1.0f,  1.0f,
+		 1.0f, -1.0f,  1.0f
 	};
 }
 
@@ -214,7 +259,6 @@ int main() try
 	glEnable(GL_BLEND);
 	glDepthFunc(GL_LESS);
 	glDepthRange(-1.0f, 1.0f);
-	glClearColor( 0.f, 0.f, 0.1f, 1.0f );
 	glEnable( GL_FRAMEBUFFER_SRGB );
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  
 
@@ -249,6 +293,12 @@ int main() try
 		});
 	state.billProg = &billProg;
 
+	ShaderProgram skyboxProg({
+		{ GL_VERTEX_SHADER, "assets/skybox/skybox.vert" },
+		{ GL_FRAGMENT_SHADER, "assets/skybox/skybox.frag" }
+		});
+	state.skyProg = &skyboxProg;
+
 	// Animation state
 	auto last = Clock::now();
 	float angle = 0.f;
@@ -268,6 +318,16 @@ int main() try
 	unsigned int eyeball = loadTexture("assets/eyeBall.png");
 	unsigned int clayN = loadTexture("assets/woolly-mammoth-skeleton-obj/ClayNormal.jpg");
 	unsigned int clayC = loadTexture("assets/woolly-mammoth-skeleton-obj/ClayColor.jpg");
+	std::vector<std::string> faces =
+	{
+		"assets/skybox/skyboxRight.png",
+		"assets/skybox/skyboxLeft.png",
+		"assets/skybox/skyboxTop.png",
+		"assets/skybox/skyboxBot.png",
+		"assets/skybox/skyboxFront.png",
+		"assets/skybox/skyboxBack.png"
+	};
+	unsigned int skybox = loadCubeMap(faces);
 	
 	
 	
@@ -436,17 +496,21 @@ int main() try
 	congregants.emplace_back(make_change(sprite, make_translation( {0.f, 2.f, 0.f} )));
 	GLuint congregantsVao = create_vaoM(&congregants[0], 1);
 
+	
+	GLuint skyboxVAO, skyboxVBO;
+	glGenVertexArrays(1, &skyboxVAO);
+	glGenBuffers(1, &skyboxVBO);
+	glBindVertexArray(skyboxVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glDeleteBuffers(1, &skyboxVBO);
 
 	OGL_CHECKPOINT_ALWAYS();
 
 
-	// Set up ImGUI
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO(); (void)io;
-	ImGui::StyleColorsDark;
-	ImGui_ImplGlfw_InitForOpenGL(window, true);
-	ImGui_ImplOpenGL3_Init("#version 430");
+
 
 	// Main loop
 	while( !glfwWindowShouldClose( window ) )
@@ -454,9 +518,6 @@ int main() try
 		// Let GLFW process events
 		glfwPollEvents();
 
-		//ImGui_ImplOpenGL3_NewFrame();
-		//ImGui_ImplGlfw_NewFrame();
-		//ImGui::NewFrame();
 		
 		// Check if window was resized.
 		float fbwidth, fbheight;
@@ -580,7 +641,6 @@ int main() try
 		//printf("normalMatrix: (%f, %f, %f)\n", state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z);
 		glUniform3f(glGetUniformLocation(prog.programId(), "viewPos"), state.camControl.cameraPos.x, state.camControl.cameraPos.y, state.camControl.cameraPos.z ); //uSceneAmbient
 
-		//glUniform3f( glGetUniformLocation(prog.programId(), "rotateDoor"), make_rotation_x( 0 ) );
 
 
 		
@@ -809,7 +869,7 @@ int main() try
 		currentMLoc += jelly.centreData.headCount;
 		glUniformMatrix4fv(glGetUniformLocation(moveProg.programId(), "scaleMat"),1, GL_TRUE, kIdentity44f.v);
 
-		//glDrawArrays( GL_TRIANGLES, currentMLoc, jelly.centreData.bodyCount);
+		glDrawArrays( GL_TRIANGLES, currentMLoc, jelly.centreData.bodyCount);
 		currentMLoc += jelly.centreData.bodyCount;
 
 
@@ -883,15 +943,19 @@ int main() try
 			glDrawArrays( GL_TRIANGLES, transPos[it->second], transparent[it->second].positions.size());
 
 		}
-
-		//ImGui::Begin("ImGUI window");
-		//ImGui::Text("Text");
-		//ImGui::End();
-
-		//ImGui::Render();
-		//ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
+		
 		glUseProgram( 0 );
+		glDepthFunc(GL_LEQUAL);
+		glUseProgram(skyboxProg.programId());
+		projCameraWorld = projection * mat33_to_mat44(mat44_to_mat33(world2camera)) * model2world ;
+		glUniformMatrix4fv(glGetUniformLocation(skyboxProg.programId(), "uProjCameraWorld"), 1, GL_TRUE, projCameraWorld.v);
+		glUniform1i(glGetUniformLocation(skyboxProg.programId(), "skybox"), 1);
+		glBindVertexArray(skyboxVAO);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, skybox);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
+		glDepthFunc(GL_LESS);
 
 		OGL_CHECKPOINT_DEBUG();
 
@@ -903,9 +967,7 @@ int main() try
 	state.prog = nullptr;
 	state.moveProg = nullptr;
 	//additional cleanup
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	ImGui::DestroyContext();
+	glDeleteVertexArrays(1, &skyboxVAO);
 	
 	return 0;
 }
